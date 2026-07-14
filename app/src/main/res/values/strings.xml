@@ -10,18 +10,22 @@
     <string name="server_url_hint">e.g. http://192.168.1.100:8080/sync</string>
     <string name="save_button">Save</string>
     <string name="sync_now_button">Sync now</string>
+    <string name="sync_status_scheduled">✓ Sync is scheduled</string>
+    <string name="sync_status_not_scheduled">⚠ Sync is not scheduled</string>
     <string name="repeat_interval_label">Repeat interval</string>
     <string-array name="repeat_intervals">
         <item>15 minutes</item>
         <item>30 minutes</item>
         <item>1 hour</item>
         <item>1 day</item>
+        <item>Disabled</item>
     </string-array>
     <string-array name="repeat_interval_values">
         <item>15</item>
         <item>30</item>
         <item>60</item>
         <item>1440</item>
+        <item>0</item>
     </string-array>
     <string name="detect_button">Detect</string>
     <string name="grant_permission_button">Grant permission</string>

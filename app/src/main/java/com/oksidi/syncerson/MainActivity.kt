@@ -47,12 +47,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var grantPermissionButton: Button
     private lateinit var logOutput: TextView
     private lateinit var logScrollView: ScrollView
-    private val logRefreshHandler = Handler(Looper.getMainLooper())
-    private val logRefreshRunnable = object : Runnable {
+    private lateinit var syncStatusText: TextView
+    private var syncScheduled = false
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private val refreshUiRunnable = object : Runnable {
         override fun run() {
             logOutput.text = AppLog.getText()
             logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
-            logRefreshHandler.postDelayed(this, 1000)
+            updateSyncStatusDisplay()
+            updatePermissionStatus()
+            refreshHandler.postDelayed(this, 1000)
         }
     }
 
@@ -67,6 +71,7 @@ class MainActivity : AppCompatActivity() {
         grantPermissionButton = findViewById(R.id.grantPermissionButton)
         logOutput = findViewById(R.id.logOutput)
         logScrollView = findViewById(R.id.logScrollView)
+        syncStatusText = findViewById(R.id.syncStatus)
         val serverUrlInput = findViewById<EditText>(R.id.serverUrlInput)
         detectButton = findViewById(R.id.detectButton)
         val saveButton = findViewById<Button>(R.id.saveButton)
@@ -92,8 +97,6 @@ class MainActivity : AppCompatActivity() {
                 ?: "http://192.168.8.200:8080/sync"
         )
 
-        updatePermissionStatus()
-
         detectButton.setOnClickListener {
             onDetectClicked()
         }
@@ -114,7 +117,13 @@ class MainActivity : AppCompatActivity() {
                 .putString(KEY_INTERVAL, interval)
                 .apply()
 
-            scheduleSyncWork()
+            if (interval == "0") {
+                WorkManager.getInstance(this).cancelAllWork()
+                syncScheduled = false
+                AppLog.append(TAG, "I", "Sync disabled (Disabled selected)")
+            } else {
+                scheduleSyncWork(interval.toLong())
+            }
 
             Toast.makeText(this, R.string.saved_toast, Toast.LENGTH_SHORT).show()
             AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, URL=$serverUrl")
@@ -133,7 +142,13 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Log copied to clipboard", Toast.LENGTH_SHORT).show()
         }
 
-        scheduleSyncWork()
+        // Only schedule if interval is not "0"
+        val intervalStr = prefs.getString(KEY_INTERVAL, "15") ?: "15"
+        if (intervalStr != "0") {
+            scheduleSyncWork(intervalStr.toLong())
+        } else {
+            syncScheduled = false
+        }
     }
 
     private fun onDetectClicked() {
@@ -183,7 +198,6 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        updatePermissionStatus()
         if (requestCode == PERMISSION_REQUEST_LOCATION &&
             grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -195,15 +209,26 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updatePermissionStatus()
         logOutput.text = AppLog.getText()
         logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
-        logRefreshHandler.postDelayed(logRefreshRunnable, 1000)
+        refreshHandler.postDelayed(refreshUiRunnable, 1000)
     }
 
     override fun onPause() {
         super.onPause()
-        logRefreshHandler.removeCallbacks(logRefreshRunnable)
+        refreshHandler.removeCallbacks(refreshUiRunnable)
+    }
+
+    private fun updateSyncStatusDisplay() {
+        syncStatusText.text = getString(
+            if (syncScheduled) R.string.sync_status_scheduled else R.string.sync_status_not_scheduled
+        )
+        syncStatusText.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (syncScheduled) android.R.color.holo_green_dark else android.R.color.holo_orange_dark
+            )
+        )
     }
 
     private fun updatePermissionStatus() {
@@ -254,11 +279,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun scheduleSyncWork() {
+    private fun scheduleSyncWork(intervalMinutes: Long) {
         // Cancel all old work first (clears stale OneTimeWorkRequests from previous runs)
         WorkManager.getInstance(this).cancelAllWork()
-
-        val intervalMinutes = prefs.getString(KEY_INTERVAL, "15")?.toLongOrNull() ?: 15L
 
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.UNMETERED)
@@ -276,6 +299,7 @@ class MainActivity : AppCompatActivity() {
 
         AppLog.append(TAG, "I", "Sync scheduled every ${intervalMinutes}min")
         Log.i(TAG, "Sync work scheduled: every ${intervalMinutes} min, WiFi only")
+        syncScheduled = true
     }
 
     private fun runNow() {

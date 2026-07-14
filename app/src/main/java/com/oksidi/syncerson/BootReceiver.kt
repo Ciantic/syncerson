@@ -18,7 +18,14 @@ class BootReceiver : BroadcastReceiver() {
         Log.i("BootReceiver", "Device booted — rescheduling sync")
 
         val prefs = context.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
-        val intervalMinutes = prefs.getString(MainActivity.KEY_INTERVAL, "15")?.toLongOrNull() ?: 15L
+        val intervalStr = prefs.getString(MainActivity.KEY_INTERVAL, "15") ?: "15"
+
+        if (intervalStr == "0") {
+            Log.i("BootReceiver", "Sync disabled — skipping")
+            return
+        }
+
+        val intervalMinutes = intervalStr.toLongOrNull() ?: 15L
 
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.UNMETERED)
