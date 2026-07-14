@@ -9,7 +9,6 @@ import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ScrollView
@@ -127,7 +126,6 @@ class MainActivity : AppCompatActivity() {
 
             Toast.makeText(this, R.string.saved_toast, Toast.LENGTH_SHORT).show()
             AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, URL=$serverUrl")
-            Log.i(TAG, "Settings saved: SSID=$ssid, URL=$serverUrl")
         }
 
         syncNowButton.setOnClickListener {
@@ -272,10 +270,9 @@ class MainActivity : AppCompatActivity() {
             ssidInput.setText(ssid)
             Toast.makeText(this, getString(R.string.ssid_detected_toast, ssid), Toast.LENGTH_SHORT).show()
             AppLog.append(TAG, "I", "Detected SSID: $ssid")
-            Log.i(TAG, "Detected SSID: $ssid")
         } else {
             Toast.makeText(this, R.string.ssid_unknown_toast, Toast.LENGTH_LONG).show()
-            Log.w(TAG, "Could not detect SSID")
+            AppLog.append(TAG, "W", "Could not detect SSID")
         }
     }
 
@@ -298,7 +295,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         AppLog.append(TAG, "I", "Sync scheduled every ${intervalMinutes}min")
-        Log.i(TAG, "Sync work scheduled: every ${intervalMinutes} min, WiFi only")
         syncScheduled = true
     }
 
@@ -307,6 +303,6 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         WorkManager.getInstance(this).enqueue(request)
-        Log.i(TAG, "One-shot sync work enqueued")
+        AppLog.append(TAG, "I", "One-shot sync work enqueued")
     }
 }
