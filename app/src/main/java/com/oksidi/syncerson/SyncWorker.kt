@@ -20,17 +20,27 @@ class SyncWorker(
 
     companion object {
         private const val TAG = "SyncWorker"
-
-        // Change these to your home server
-        private const val HOME_WIFI_SSID = "YourHomeWiFiSSID"
-        private const val SERVER_URL = "http://192.168.1.100:8080/sync"
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        AppLog.append(TAG, "I", "SyncWorker started")
         Log.i(TAG, "SyncWorker started")
 
+        val prefs = applicationContext.getSharedPreferences(
+            MainActivity.PREFS_NAME, Context.MODE_PRIVATE
+        )
+        val homeSsid = prefs.getString(MainActivity.KEY_SSID, null).orEmpty()
+        val serverUrl = prefs.getString(MainActivity.KEY_SERVER_URL, null).orEmpty()
+
+        if (serverUrl.isEmpty()) {
+            AppLog.append(TAG, "W", "No server URL configured, skipping sync")
+            Log.w(TAG, "No server URL configured, skipping sync")
+            return@withContext Result.retry()
+        }
+
         // 1. Check if we're on home WiFi
-        if (!isConnectedToHomeWifi()) {
+        if (!isConnectedToHomeWifi(homeSsid)) {
+            AppLog.append(TAG, "I", "Not on home WiFi, skipping sync")
             Log.i(TAG, "Not on home WiFi, skipping sync")
             return@withContext Result.retry()
         }
@@ -38,16 +48,18 @@ class SyncWorker(
         // 2. Send data to server
         return@withContext try {
             val payload = "hello from Syncerson".toByteArray()
-            sendBytes(payload)
+            sendBytes(serverUrl, payload)
+            AppLog.append(TAG, "I", "Sync successful — HTTP 200")
             Log.i(TAG, "Sync successful")
             Result.success()
         } catch (e: Exception) {
+            AppLog.append(TAG, "E", "Sync failed: ${e.message}")
             Log.e(TAG, "Sync failed", e)
             Result.retry()
         }
     }
 
-    private fun isConnectedToHomeWifi(): Boolean {
+    private fun isConnectedToHomeWifi(homeSsid: String): Boolean {
         val connectivityManager =
             applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: run {
@@ -70,19 +82,21 @@ class SyncWorker(
             return false
         }
 
-        // Optional: check specific SSID (requires ACCESS_FINE_LOCATION on Android 8+)
+        // Check specific SSID if configured
         val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
         val currentSsid = wifiManager?.connectionInfo?.ssid?.removeSurrounding("\"")
-        Log.d(TAG, "Current SSID: $currentSsid")
+        Log.d(TAG, "Current SSID: $currentSsid, Required: $homeSsid")
 
-        // Uncomment to require a specific home SSID:
-        // return currentSsid == HOME_WIFI_SSID
+        if (homeSsid.isNotEmpty() && currentSsid != homeSsid) {
+            Log.d(TAG, "SSID mismatch, skipping")
+            return false
+        }
 
         return true
     }
 
-    private fun sendBytes(data: ByteArray) {
-        val url = URL(SERVER_URL)
+    private fun sendBytes(serverUrl: String, data: ByteArray) {
+        val url = URL(serverUrl)
         val connection = url.openConnection() as HttpURLConnection
         connection.run {
             requestMethod = "POST"
