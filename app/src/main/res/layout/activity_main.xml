@@ -14,11 +14,45 @@
         android:textSize="24sp"
         android:layout_marginBottom="32dp" />
 
-    <!-- Permission row -->
+    <!-- Location permission row -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/location_permission_title"
+        android:text="Location permission"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/locationPermissionStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/grantLocationPermissionButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Grant location"
+            android:visibility="gone"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    </LinearLayout>
+
+    <!-- Background location permission row -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Background location permission"
         android:textStyle="bold"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
@@ -31,18 +65,18 @@
         android:layout_marginBottom="24dp">
 
         <TextView
-            android:id="@+id/permissionStatus"
+            android:id="@+id/bgLocationPermissionStatus"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:textSize="12sp" />
 
         <Button
-            android:id="@+id/grantPermissionButton"
+            android:id="@+id/grantBgLocationPermissionButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="@string/grant_permission_button"
+            android:text="Grant background location"
             android:visibility="gone"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 

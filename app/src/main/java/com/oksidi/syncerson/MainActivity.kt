@@ -36,14 +36,18 @@ class MainActivity : AppCompatActivity() {
         const val KEY_SERVER_URL = "server_url"
         const val KEY_INTERVAL = "interval_minutes"
         private const val KEY_PERMISSION_REQUESTED = "perm_requested"
+        private const val KEY_BG_PERMISSION_REQUESTED = "bg_perm_requested"
         private const val PERMISSION_REQUEST_LOCATION = 1
+        private const val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     }
 
     private lateinit var prefs: SharedPreferences
     private lateinit var ssidInput: EditText
     private lateinit var detectButton: Button
-    private lateinit var permissionStatus: TextView
-    private lateinit var grantPermissionButton: Button
+    private lateinit var locationPermissionStatus: TextView
+    private lateinit var grantLocationPermissionButton: Button
+    private lateinit var bgLocationPermissionStatus: TextView
+    private lateinit var grantBgLocationPermissionButton: Button
     private lateinit var logOutput: TextView
     private lateinit var logScrollView: ScrollView
     private lateinit var syncStatusText: TextView
@@ -66,8 +70,10 @@ class MainActivity : AppCompatActivity() {
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         ssidInput = findViewById(R.id.ssidInput)
-        permissionStatus = findViewById(R.id.permissionStatus)
-        grantPermissionButton = findViewById(R.id.grantPermissionButton)
+        locationPermissionStatus = findViewById(R.id.locationPermissionStatus)
+        grantLocationPermissionButton = findViewById(R.id.grantLocationPermissionButton)
+        bgLocationPermissionStatus = findViewById(R.id.bgLocationPermissionStatus)
+        grantBgLocationPermissionButton = findViewById(R.id.grantBgLocationPermissionButton)
         logOutput = findViewById(R.id.logOutput)
         logScrollView = findViewById(R.id.logScrollView)
         syncStatusText = findViewById(R.id.syncStatus)
@@ -97,11 +103,15 @@ class MainActivity : AppCompatActivity() {
         )
 
         detectButton.setOnClickListener {
-            onDetectClicked()
+            detectAndFillSsid()
         }
 
-        grantPermissionButton.setOnClickListener {
+        grantLocationPermissionButton.setOnClickListener {
             requestLocationPermission()
+        }
+
+        grantBgLocationPermissionButton.setOnClickListener {
+            requestBackgroundLocationPermission()
         }
 
         saveButton.setOnClickListener {
@@ -149,15 +159,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun onDetectClicked() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED) {
-            detectAndFillSsid()
-        } else {
-            requestLocationPermission()
-        }
-    }
-
     private fun requestLocationPermission() {
         if (ActivityCompat.shouldShowRequestPermissionRationale(
                 this, Manifest.permission.ACCESS_FINE_LOCATION)) {
@@ -196,12 +197,54 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_LOCATION &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            detectAndFillSsid()
+        when (requestCode) {
+            PERMISSION_REQUEST_LOCATION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    AppLog.append(TAG, "I", "Location permission granted")
+                    Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
+                    detectAndFillSsid()
+                } else {
+                    Toast.makeText(this, R.string.ssid_unknown_toast, Toast.LENGTH_LONG).show()
+                }
+            }
+            PERMISSION_REQUEST_BACKGROUND_LOCATION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    AppLog.append(TAG, "I", "Background location granted — SSID readable at all times")
+                    Toast.makeText(this, "Location allowed all the time", Toast.LENGTH_SHORT).show()
+                    detectAndFillSsid()
+                } else {
+                    AppLog.append(TAG, "W", "Background location denied — SSID only readable when app is open")
+                    Toast.makeText(this, "SSID detection works only while app is open", Toast.LENGTH_LONG).show()
+                    // Still fill SSID since foreground access works right now
+                    detectAndFillSsid()
+                }
+            }
+        }
+    }
+
+    private fun requestBackgroundLocationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            val alreadyRequested = prefs.getBoolean(KEY_BG_PERMISSION_REQUESTED, false)
+            if (alreadyRequested) {
+                // User already chose; don't nag, just open settings
+                Toast.makeText(
+                    this,
+                    "To allow SSID detection in background, enable 'Allow all the time' in app settings",
+                    Toast.LENGTH_LONG
+                ).show()
+                detectAndFillSsid() // fill with foreground access at least
+                return
+            }
+            prefs.edit().putBoolean(KEY_BG_PERMISSION_REQUESTED, true).apply()
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                PERMISSION_REQUEST_BACKGROUND_LOCATION
+            )
         } else {
-            Toast.makeText(this, R.string.ssid_unknown_toast, Toast.LENGTH_LONG).show()
+            // Android 9 and below — foreground location is enough
+            detectAndFillSsid()
         }
     }
 
@@ -230,35 +273,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePermissionStatus() {
-        val granted = ContextCompat.checkSelfPermission(
+        val fgGranted = ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        if (granted) {
-            permissionStatus.text = getString(R.string.permission_granted)
-            permissionStatus.setTextColor(
+        val bgGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Android 9 and below: foreground == all the time
+        }
+
+        // Location permission row
+        if (fgGranted) {
+            locationPermissionStatus.text = "✓ Granted"
+            locationPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_green_dark))
-            grantPermissionButton.visibility = android.view.View.GONE
+            grantLocationPermissionButton.visibility = android.view.View.GONE
             detectButton.isEnabled = true
             detectButton.alpha = 1.0f
         } else {
+            locationPermissionStatus.text = "✗ Not granted"
+            locationPermissionStatus.setTextColor(
+                ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            grantLocationPermissionButton.visibility = android.view.View.VISIBLE
             detectButton.isEnabled = false
             detectButton.alpha = 0.5f
-            val permanentlyDenied = prefs.getBoolean(KEY_PERMISSION_REQUESTED, false) &&
-                !ActivityCompat.shouldShowRequestPermissionRationale(
-                    this, Manifest.permission.ACCESS_FINE_LOCATION)
+        }
 
-            if (permanentlyDenied) {
-                permissionStatus.text = getString(R.string.permission_permanently_denied)
-                permissionStatus.setTextColor(
-                    ContextCompat.getColor(this, android.R.color.holo_red_dark))
-                grantPermissionButton.visibility = android.view.View.VISIBLE
+        // Background location permission row (only on Android 10+)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            if (!fgGranted) {
+                // Hide background row if foreground isn't even granted
+                bgLocationPermissionStatus.visibility = android.view.View.GONE
+                grantBgLocationPermissionButton.visibility = android.view.View.GONE
+            } else if (bgGranted) {
+                bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
+                bgLocationPermissionStatus.text = "✓ Granted"
+                bgLocationPermissionStatus.setTextColor(
+                    ContextCompat.getColor(this, android.R.color.holo_green_dark))
+                grantBgLocationPermissionButton.visibility = android.view.View.GONE
             } else {
-                permissionStatus.text = getString(R.string.permission_needed)
-                permissionStatus.setTextColor(
-                    ContextCompat.getColor(this, android.R.color.holo_orange_dark))
-                grantPermissionButton.visibility = android.view.View.VISIBLE
+                bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
+                bgLocationPermissionStatus.text = "✗ Not granted (needed for background SSID)"
+                bgLocationPermissionStatus.setTextColor(
+                    ContextCompat.getColor(this, android.R.color.holo_red_dark))
+                grantBgLocationPermissionButton.visibility = android.view.View.VISIBLE
             }
+        } else {
+            // Android 9 and below — no separate background permission
+            bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
+            bgLocationPermissionStatus.text = "N/A (Android 9 or below)"
+            bgLocationPermissionStatus.setTextColor(
+                ContextCompat.getColor(this, android.R.color.darker_gray))
+            grantBgLocationPermissionButton.visibility = android.view.View.GONE
         }
     }
 
