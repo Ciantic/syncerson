@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val SYNC_WORK_NAME = "home_wifi_sync"
+        const val SYNC_WORK_NAME = "home_wifi_sync"
         const val PREFS_NAME = "sync_prefs"
         const val KEY_SSID = "home_wifi_ssid"
         const val KEY_SERVER_URL = "server_url"
