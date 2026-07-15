@@ -7,7 +7,7 @@ object Constants {
     const val KEY_SERVER_URL = "server_url"
     const val KEY_INTERVAL = "interval_minutes"
     const val KEY_PERMISSION_REQUESTED = "perm_requested"
-    const val KEY_BG_PERMISSION_REQUESTED = "bg_perm_requested"
     const val PERMISSION_REQUEST_LOCATION = 1
     const val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
+    const val PERMISSION_REQUEST_MEDIA = 3
 }

@@ -6,9 +6,11 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ScrollView
@@ -42,6 +44,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toggleBootReceiverButton: Button
     private lateinit var powerReceiverStatus: TextView
     private lateinit var togglePowerReceiverButton: Button
+    private lateinit var mediaPermissionStatus: TextView
+    private lateinit var grantMediaPermissionButton: Button
+    private lateinit var permissionSettingsButton: Button
     private lateinit var logOutput: TextView
     private lateinit var logScrollView: ScrollView
     private lateinit var periodicSyncStatusText: TextView
@@ -74,6 +79,9 @@ class MainActivity : AppCompatActivity() {
         toggleBootReceiverButton = findViewById(R.id.toggleBootReceiverButton)
         powerReceiverStatus = findViewById(R.id.powerReceiverStatus)
         togglePowerReceiverButton = findViewById(R.id.togglePowerReceiverButton)
+        mediaPermissionStatus = findViewById(R.id.mediaPermissionStatus)
+        grantMediaPermissionButton = findViewById(R.id.grantMediaPermissionButton)
+        permissionSettingsButton = findViewById(R.id.permissionSettingsButton)
         logOutput = findViewById(R.id.logOutput)
         logScrollView = findViewById(R.id.logScrollView)
         periodicSyncStatusText = findViewById(R.id.periodicSyncStatus)
@@ -112,6 +120,16 @@ class MainActivity : AppCompatActivity() {
 
         grantBgLocationPermissionButton.setOnClickListener {
             requestBackgroundLocationPermission()
+        }
+
+        grantMediaPermissionButton.setOnClickListener {
+            requestMediaPermission()
+        }
+
+        permissionSettingsButton.setOnClickListener {
+            val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = android.net.Uri.parse("package:$packageName")
+            startActivity(intent)
         }
 
         toggleBootReceiverButton.setOnClickListener {
@@ -209,22 +227,31 @@ class MainActivity : AppCompatActivity() {
                     AppLog.append(TAG, "W", "Background location denied — SSID only readable when app is open")
                 }
             }
+            Constants.PERMISSION_REQUEST_MEDIA -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    val count = getMediaCount()
+                    AppLog.append(TAG, "I",
+                        if (count < 0) "Media access: limited" else "Media access granted ($count photos)")
+                } else {
+                    AppLog.append(TAG, "W", "Media access denied")
+                }
+            }
         }
     }
 
     private fun requestBackgroundLocationPermission() {
-        val alreadyRequested = prefs.getBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, false)
-        if (alreadyRequested) {
-            // User already chose; don't nag
-            AppLog.append(TAG, "W", "Background location already denied — enable 'Allow all the time' in app settings")
-            return
-        }
-        prefs.edit().putBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, true).apply()
-
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
             Constants.PERMISSION_REQUEST_BACKGROUND_LOCATION
+        )
+    }
+
+    private fun requestMediaPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+            Constants.PERMISSION_REQUEST_MEDIA
         )
     }
 
@@ -298,6 +325,30 @@ class MainActivity : AppCompatActivity() {
                 ContextCompat.getColor(this, android.R.color.holo_red_dark))
             grantBgLocationPermissionButton.visibility = android.view.View.VISIBLE
         }
+
+        // Media permission row
+        val mediaGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.READ_MEDIA_IMAGES
+        ) == PackageManager.PERMISSION_GRANTED
+        if (mediaGranted) {
+            val count = getMediaCount()
+            if (count < 0) {
+                mediaPermissionStatus.text = "⚠ Limited access"
+                mediaPermissionStatus.setTextColor(
+                    ContextCompat.getColor(this, android.R.color.holo_orange_dark))
+                grantMediaPermissionButton.visibility = android.view.View.VISIBLE
+            } else {
+                mediaPermissionStatus.text = "✓ Granted ($count photos)"
+                mediaPermissionStatus.setTextColor(
+                    ContextCompat.getColor(this, android.R.color.holo_green_dark))
+                grantMediaPermissionButton.visibility = android.view.View.GONE
+            }
+        } else {
+            mediaPermissionStatus.text = "✗ Not granted"
+            mediaPermissionStatus.setTextColor(
+                ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            grantMediaPermissionButton.visibility = android.view.View.VISIBLE
+        }
     }
 
     private fun detectAndFillSsid() {
@@ -362,6 +413,22 @@ class MainActivity : AppCompatActivity() {
             if (intervalMinutes > 0) "Sync scheduled every ${intervalMinutes}min"
             else "Periodic sync off"
         )
+    }
+
+    /** Returns photo count, or -1 if access is limited (Android 14+). */
+    private fun getMediaCount(): Int {
+        return try {
+            contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media._ID),
+                null, null, null
+            )?.use { cursor ->
+                cursor.count
+            } ?: 0
+        } catch (e: Exception) {
+            // Permission says granted but query failed = limited access (Android 14+)
+            -1
+        }
     }
 
     private fun runNow() {
