@@ -2,7 +2,6 @@ package com.oksidi.syncerson
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import androidx.work.Constraints
@@ -16,20 +15,21 @@ fun getCurrentSsid(tag: String, context: Context): String? {
     val cm = context.getSystemService(
         Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         
-    // Primary: modern transportInfo (works on real WiFi devices)
-    val wifiInfo = cm.getNetworkCapabilities(cm.activeNetwork)?.transportInfo as? WifiInfo
-    if (wifiInfo != null) {
-        val ssid = wifiInfo.ssid?.removeSurrounding("\"")
-        if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") return ssid
+    // Primary: ConnectivityManager.activeNetwork + transportInfo (non-deprecated, API 33+)
+    cm.activeNetwork?.let { network ->
+        cm.getNetworkCapabilities(network)?.let { caps ->
+            val info = caps.transportInfo as? WifiInfo
+            val ssid = info?.ssid?.removeSurrounding("\"")
+            if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") return ssid
+        }
     }
-    
-    AppLog.append(tag, "W", "No network capabilities, trying fallback")
 
-    // Fallback: WifiManager.connectionInfo (works on emulator, which uses Ethernet transport)
+    // Fallback: WifiManager.connectionInfo. Handles devices where activeNetwork is
+    // null or transportInfo is not populated despite WiFi being connected.
     val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     @Suppress("DEPRECATION")
-    val ssid = wm.connectionInfo.ssid?.removeSurrounding("\"")
-    if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") return ssid
+    val wmSsid = wm.connectionInfo.ssid?.removeSurrounding("\"")
+    if (!wmSsid.isNullOrEmpty() && wmSsid != "<unknown ssid>") return wmSsid
 
     AppLog.append(tag, "W", "Not connected to WiFi — cannot detect SSID")
     return null
