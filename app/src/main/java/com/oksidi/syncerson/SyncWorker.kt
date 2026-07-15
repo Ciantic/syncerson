@@ -46,9 +46,11 @@ class SyncWorker(
         // 2. Send data to server
         return@withContext try {
             val photoCount = getPhotoCount()
-            val urlWithCount = appendQueryParam(serverUrl, "photos", photoCount.toString())
+            val latestTimestamp = getLatestPhotoTimestamp()
+            var url = appendQueryParam(serverUrl, "photos", photoCount.toString())
+            url = appendQueryParam(url, "latest", latestTimestamp.toString())
             val payload = "hello from Syncerson".toByteArray()
-            sendBytes(urlWithCount, payload)
+            sendBytes(url, payload)
             AppLog.append(TAG, "I", "Sync successful — HTTP 200")
             Result.success()
         } catch (e: Exception) {
@@ -89,6 +91,27 @@ class SyncWorker(
         } catch (e: Exception) {
             AppLog.append(TAG, "W", "Cannot count photos: ${e.message}")
             0
+        }
+    }
+
+    private fun getLatestPhotoTimestamp(): Long {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                applicationContext, android.Manifest.permission.READ_MEDIA_IMAGES
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return 0L
+
+        return try {
+            applicationContext.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media.DATE_MODIFIED),
+                null, null,
+                "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getLong(0) else 0L
+            } ?: 0L
+        } catch (e: Exception) {
+            AppLog.append(TAG, "W", "Cannot get latest timestamp: ${e.message}")
+            0L
         }
     }
 
