@@ -101,11 +101,21 @@ class SyncWorker(
         ) return 0L
 
         return try {
+            val bundle = android.os.Bundle().apply {
+                putInt(android.content.ContentResolver.QUERY_ARG_LIMIT, 1)
+                putInt(
+                    android.content.ContentResolver.QUERY_ARG_SORT_DIRECTION,
+                    android.content.ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+                )
+                putStringArray(
+                    android.content.ContentResolver.QUERY_ARG_SORT_COLUMNS,
+                    arrayOf(MediaStore.Images.Media.DATE_MODIFIED)
+                )
+            }
             applicationContext.contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 arrayOf(MediaStore.Images.Media.DATE_MODIFIED),
-                null, null,
-                "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
+                bundle, null
             )?.use { cursor ->
                 if (cursor.moveToFirst()) cursor.getLong(0) else 0L
             } ?: 0L
