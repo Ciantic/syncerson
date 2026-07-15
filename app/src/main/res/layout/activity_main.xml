@@ -140,6 +140,36 @@
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
+    <!-- Repeat interval -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/repeat_interval_label"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/intervalSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/periodicSyncStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:layout_marginBottom="16dp" />
+
 
     <!-- Server setup section -->
     <TextView
@@ -182,7 +212,7 @@
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
-
+    
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -198,35 +228,6 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Repeat interval -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/repeat_interval_label"
-            android:textSize="14sp"
-            android:layout_marginEnd="8dp" />
-
-        <Spinner
-            android:id="@+id/intervalSpinner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/periodicSyncStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:layout_marginBottom="16dp" />
 
     <LinearLayout
         android:layout_width="wrap_content"
