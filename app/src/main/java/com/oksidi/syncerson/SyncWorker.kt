@@ -1,8 +1,11 @@
 package com.oksidi.syncerson
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.wifi.WifiInfo
+import android.os.Build
+import android.provider.MediaStore
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
@@ -42,8 +45,10 @@ class SyncWorker(
 
         // 2. Send data to server
         return@withContext try {
+            val photoCount = getPhotoCount()
+            val urlWithCount = appendQueryParam(serverUrl, "photos", photoCount.toString())
             val payload = "hello from Syncerson".toByteArray()
-            sendBytes(serverUrl, payload)
+            sendBytes(urlWithCount, payload)
             AppLog.append(TAG, "I", "Sync successful — HTTP 200")
             Result.success()
         } catch (e: Exception) {
@@ -62,6 +67,29 @@ class SyncWorker(
         }
 
         return true
+    }
+
+    private fun appendQueryParam(url: String, key: String, value: String): String {
+        val separator = if (url.contains('?')) "&" else "?"
+        return "$url$separator$key=$value"
+    }
+
+    private fun getPhotoCount(): Int {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                applicationContext, android.Manifest.permission.READ_MEDIA_IMAGES
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return 0
+
+        return try {
+            applicationContext.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media._ID),
+                null, null, null
+            )?.use { cursor -> cursor.count } ?: 0
+        } catch (e: Exception) {
+            AppLog.append(TAG, "W", "Cannot count photos: ${e.message}")
+            0
+        }
     }
 
     private fun sendBytes(serverUrl: String, data: ByteArray) {
