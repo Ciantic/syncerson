@@ -1,8 +1,31 @@
 package com.oksidi.syncerson
 
+import android.content.Context
+import java.io.File
+import java.util.concurrent.ConcurrentLinkedQueue
+
 object AppLog {
-    private const val MAX_LINES = 200
-    private val buffer = StringBuilder()
+    private const val MAX_LINES = 500
+    private val buffer = ConcurrentLinkedQueue<String>()
+    private var logFile: File? = null
+
+    fun init(context: Context) {
+        if (logFile != null) return // already initialized
+        logFile = File(context.filesDir, "syncerson.log")
+        loadFromFile()
+    }
+
+    private fun loadFromFile() {
+        val file = logFile ?: return
+        if (!file.exists()) return
+        val lines = try {
+            file.readLines().takeLast(MAX_LINES)
+        } catch (_: Exception) {
+            return
+        }
+        buffer.clear()
+        buffer.addAll(lines)
+    }
 
     @Synchronized
     fun append(tag: String, level: String, message: String) {
@@ -10,18 +33,26 @@ object AppLog {
             .format(java.util.Date())
         val line = "$timestamp $level/$tag: $message"
 
-        if (buffer.isNotEmpty()) buffer.append('\n')
-        buffer.append(line)
+        buffer.add(line)
+        if (buffer.size > MAX_LINES) {
+            buffer.poll() // remove oldest
+        }
 
-        // Trim old lines
-        val newlineCount = buffer.count { it == '\n' }
-        if (newlineCount >= MAX_LINES) {
-            // Remove oldest line
-            val idx = buffer.indexOf('\n') + 1
-            buffer.delete(0, idx)
+        // Append to file and trim
+        try {
+            val file = logFile ?: return
+            file.appendText(line + "\n")
+
+            // Trim file every 50 writes to avoid growing unbounded
+            if (buffer.size % 50 == 0) {
+                val trimmed = file.readLines().takeLast(MAX_LINES)
+                file.writeText(trimmed.joinToString("\n") + "\n")
+            }
+        } catch (_: Exception) {
+            // silently ignore file write errors
         }
     }
 
     @Synchronized
-    fun getText(): String = buffer.toString()
+    fun getText(): String = buffer.joinToString("\n")
 }

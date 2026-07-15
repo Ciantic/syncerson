@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        AppLog.init(this)
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         ssidInput = findViewById(R.id.ssidInput)

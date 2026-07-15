@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 
 class EventReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        AppLog.init(context.applicationContext)
         AppLog.append("EventReceiver", "I", "Received: ${intent.action}")
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> onBoot(context)

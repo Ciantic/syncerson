@@ -21,6 +21,7 @@ class SyncWorker(
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        AppLog.init(applicationContext)
         AppLog.append(TAG, "I", "SyncWorker started")
 
         val prefs = applicationContext.getSharedPreferences(
