@@ -3,10 +3,9 @@ package com.oksidi.syncerson
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.wifi.WifiInfo
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -39,6 +38,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var grantLocationPermissionButton: Button
     private lateinit var bgLocationPermissionStatus: TextView
     private lateinit var grantBgLocationPermissionButton: Button
+    private lateinit var bootReceiverStatus: TextView
+    private lateinit var toggleBootReceiverButton: Button
+    private lateinit var powerReceiverStatus: TextView
+    private lateinit var togglePowerReceiverButton: Button
     private lateinit var logOutput: TextView
     private lateinit var logScrollView: ScrollView
     private lateinit var syncStatusText: TextView
@@ -50,6 +53,7 @@ class MainActivity : AppCompatActivity() {
             logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
             updateSyncStatusDisplay()
             updatePermissionStatus()
+            updateReceiverToggles()
             refreshHandler.postDelayed(this, 1000)
         }
     }
@@ -66,6 +70,10 @@ class MainActivity : AppCompatActivity() {
         grantLocationPermissionButton = findViewById(R.id.grantLocationPermissionButton)
         bgLocationPermissionStatus = findViewById(R.id.bgLocationPermissionStatus)
         grantBgLocationPermissionButton = findViewById(R.id.grantBgLocationPermissionButton)
+        bootReceiverStatus = findViewById(R.id.bootReceiverStatus)
+        toggleBootReceiverButton = findViewById(R.id.toggleBootReceiverButton)
+        powerReceiverStatus = findViewById(R.id.powerReceiverStatus)
+        togglePowerReceiverButton = findViewById(R.id.togglePowerReceiverButton)
         logOutput = findViewById(R.id.logOutput)
         logScrollView = findViewById(R.id.logScrollView)
         syncStatusText = findViewById(R.id.syncStatus)
@@ -104,6 +112,16 @@ class MainActivity : AppCompatActivity() {
 
         grantBgLocationPermissionButton.setOnClickListener {
             requestBackgroundLocationPermission()
+        }
+
+        toggleBootReceiverButton.setOnClickListener {
+            toggleReceiver(ComponentName(this, BootReceiver::class.java),
+                Constants.KEY_BOOT_RECEIVER_ENABLED)
+        }
+
+        togglePowerReceiverButton.setOnClickListener {
+            toggleReceiver(ComponentName(this, PowerConnectedReceiver::class.java),
+                Constants.KEY_POWER_RECEIVER_ENABLED)
         }
 
         saveButton.setOnClickListener {
@@ -318,6 +336,54 @@ class MainActivity : AppCompatActivity() {
         } else {
             AppLog.append(TAG, "W", "Could not detect SSID")
         }
+    }
+
+    private fun toggleReceiver(component: ComponentName, prefKey: String) {
+        val pm = packageManager
+        val currentState = pm.getComponentEnabledSetting(component)
+        val currentlyEnabled = currentState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        val enable = !currentlyEnabled
+        pm.setComponentEnabledSetting(
+            component,
+            if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        prefs.edit().putBoolean(prefKey, enable).apply()
+        AppLog.append(TAG, "I", "${component.shortClassName} ${if (enable) "enabled" else "disabled"}")
+    }
+
+    private fun updateReceiverToggles() {
+        updateReceiverToggle(
+            ComponentName(this, BootReceiver::class.java),
+            Constants.KEY_BOOT_RECEIVER_ENABLED,
+            bootReceiverStatus, toggleBootReceiverButton,
+            "On boot"
+        )
+        updateReceiverToggle(
+            ComponentName(this, PowerConnectedReceiver::class.java),
+            Constants.KEY_POWER_RECEIVER_ENABLED,
+            powerReceiverStatus, togglePowerReceiverButton,
+            "On power"
+        )
+    }
+
+    private fun updateReceiverToggle(
+        component: ComponentName, prefKey: String,
+        statusText: TextView, button: Button, label: String
+    ) {
+        // Read from PackageManager — the source of truth
+        val currentState = packageManager.getComponentEnabledSetting(component)
+        val enabled = currentState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
+        statusText.text = "$label: ${if (enabled) "enabled ✓" else "disabled ✗"}"
+        statusText.setTextColor(
+            ContextCompat.getColor(this,
+                if (enabled) android.R.color.holo_green_dark
+                else android.R.color.holo_red_dark
+            )
+        )
+        button.text = if (enabled) "Disable" else "Enable"
     }
 
     private fun scheduleSyncWork(intervalMinutes: Long) {
