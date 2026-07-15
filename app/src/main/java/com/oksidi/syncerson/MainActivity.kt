@@ -115,13 +115,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         toggleBootReceiverButton.setOnClickListener {
-            toggleReceiver(ComponentName(this, BootReceiver::class.java),
-                Constants.KEY_BOOT_RECEIVER_ENABLED)
+            toggleReceiver(ComponentName(this, BootReceiver::class.java))
         }
 
         togglePowerReceiverButton.setOnClickListener {
-            toggleReceiver(ComponentName(this, PowerConnectedReceiver::class.java),
-                Constants.KEY_POWER_RECEIVER_ENABLED)
+            toggleReceiver(ComponentName(this, PowerConnectedReceiver::class.java))
         }
 
         saveButton.setOnClickListener {
@@ -338,38 +336,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun toggleReceiver(component: ComponentName, prefKey: String) {
+    private fun toggleReceiver(component: ComponentName) {
         val pm = packageManager
         val currentState = pm.getComponentEnabledSetting(component)
         val currentlyEnabled = currentState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        val enable = !currentlyEnabled
         pm.setComponentEnabledSetting(
             component,
-            if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            if (currentlyEnabled) PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
             PackageManager.DONT_KILL_APP
         )
-        prefs.edit().putBoolean(prefKey, enable).apply()
-        AppLog.append(TAG, "I", "${component.shortClassName} ${if (enable) "enabled" else "disabled"}")
+        AppLog.append(TAG, "I", "${component.shortClassName} ${if (currentlyEnabled) "disabled" else "enabled"}")
     }
 
     private fun updateReceiverToggles() {
         updateReceiverToggle(
             ComponentName(this, BootReceiver::class.java),
-            Constants.KEY_BOOT_RECEIVER_ENABLED,
             bootReceiverStatus, toggleBootReceiverButton,
             "On boot"
         )
         updateReceiverToggle(
             ComponentName(this, PowerConnectedReceiver::class.java),
-            Constants.KEY_POWER_RECEIVER_ENABLED,
             powerReceiverStatus, togglePowerReceiverButton,
             "On power"
         )
     }
 
     private fun updateReceiverToggle(
-        component: ComponentName, prefKey: String,
+        component: ComponentName,
         statusText: TextView, button: Button, label: String
     ) {
         // Read from PackageManager — the source of truth

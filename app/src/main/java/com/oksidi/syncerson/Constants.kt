@@ -8,8 +8,6 @@ object Constants {
     const val KEY_INTERVAL = "interval_minutes"
     const val KEY_PERMISSION_REQUESTED = "perm_requested"
     const val KEY_BG_PERMISSION_REQUESTED = "bg_perm_requested"
-    const val KEY_BOOT_RECEIVER_ENABLED = "boot_receiver_enabled"
-    const val KEY_POWER_RECEIVER_ENABLED = "power_receiver_enabled"
     const val PERMISSION_REQUEST_LOCATION = 1
     const val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
 }
