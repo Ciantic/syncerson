@@ -4,12 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import java.util.concurrent.TimeUnit
 
 class EventReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -24,8 +21,8 @@ class EventReceiver : BroadcastReceiver() {
     private fun onBoot(context: Context) {
         AppLog.append("EventReceiver", "I", "Device booted — rescheduling sync")
 
-        val prefs = context.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
-        val intervalStr = prefs.getString(MainActivity.KEY_INTERVAL, "15") ?: "15"
+        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        val intervalStr = prefs.getString(Constants.KEY_INTERVAL, "15") ?: "15"
 
         if (intervalStr == "0") {
             AppLog.append("EventReceiver", "I", "Sync disabled — skipping")
@@ -33,29 +30,15 @@ class EventReceiver : BroadcastReceiver() {
         }
 
         val intervalMinutes = intervalStr.toLongOrNull() ?: 15L
-
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
-            .build()
-
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            MainActivity.SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE,
-            syncRequest
-        )
-
+        schedulePeriodicSync(context, intervalMinutes)
         AppLog.append("EventReceiver", "I", "Sync scheduled every ${intervalMinutes}min")
     }
 
     private fun onPowerConnected(context: Context) {
         AppLog.append("EventReceiver", "I", "Power connected — triggering sync")
 
-        val prefs = context.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
-        val intervalStr = prefs.getString(MainActivity.KEY_INTERVAL, "15") ?: "15"
+        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        val intervalStr = prefs.getString(Constants.KEY_INTERVAL, "15") ?: "15"
         if (intervalStr == "0") {
             AppLog.append("EventReceiver", "I", "Sync disabled — skipping")
             return

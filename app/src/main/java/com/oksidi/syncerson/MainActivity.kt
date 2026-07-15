@@ -5,7 +5,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.net.wifi.WifiManager
+import android.net.ConnectivityManager
+import android.net.wifi.WifiInfo
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,7 +15,6 @@ import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -30,15 +30,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        const val SYNC_WORK_NAME = "home_wifi_sync"
-        const val PREFS_NAME = "sync_prefs"
-        const val KEY_SSID = "home_wifi_ssid"
-        const val KEY_SERVER_URL = "server_url"
-        const val KEY_INTERVAL = "interval_minutes"
-        private const val KEY_PERMISSION_REQUESTED = "perm_requested"
-        private const val KEY_BG_PERMISSION_REQUESTED = "bg_perm_requested"
-        private const val PERMISSION_REQUEST_LOCATION = 1
-        private const val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     }
 
     private lateinit var prefs: SharedPreferences
@@ -68,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         AppLog.init(this)
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
 
         ssidInput = findViewById(R.id.ssidInput)
         locationPermissionStatus = findViewById(R.id.locationPermissionStatus)
@@ -92,14 +83,14 @@ class MainActivity : AppCompatActivity() {
             this, android.R.layout.simple_spinner_dropdown_item, intervalOptions)
 
         // Restore saved interval selection
-        val savedInterval = prefs.getString(KEY_INTERVAL, "15") ?: "15"
+        val savedInterval = prefs.getString(Constants.KEY_INTERVAL, "15") ?: "15"
         val savedIndex = intervalValues.indexOf(savedInterval)
         if (savedIndex >= 0) intervalSpinner.setSelection(savedIndex)
 
         // Load saved values
-        ssidInput.setText(prefs.getString(KEY_SSID, ""))
+        ssidInput.setText(prefs.getString(Constants.KEY_SSID, ""))
         serverUrlInput.setText(
-            prefs.getString(KEY_SERVER_URL, null)?.ifEmpty { null }
+            prefs.getString(Constants.KEY_SERVER_URL, null)?.ifEmpty { null }
                 ?: "http://192.168.8.200:8080/sync"
         )
 
@@ -122,9 +113,9 @@ class MainActivity : AppCompatActivity() {
             val interval = intervalValues[selectedIntervalIdx]
 
             prefs.edit()
-                .putString(KEY_SSID, ssid)
-                .putString(KEY_SERVER_URL, serverUrl)
-                .putString(KEY_INTERVAL, interval)
+                .putString(Constants.KEY_SSID, ssid)
+                .putString(Constants.KEY_SERVER_URL, serverUrl)
+                .putString(Constants.KEY_INTERVAL, interval)
                 .apply()
 
             if (interval == "0") {
@@ -135,7 +126,6 @@ class MainActivity : AppCompatActivity() {
                 scheduleSyncWork(interval.toLong())
             }
 
-            Toast.makeText(this, R.string.saved_toast, Toast.LENGTH_SHORT).show()
             AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, URL=$serverUrl")
         }
 
@@ -148,11 +138,11 @@ class MainActivity : AppCompatActivity() {
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Syncerson log", AppLog.getText())
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "Log copied to clipboard", Toast.LENGTH_SHORT).show()
+            AppLog.append(TAG, "I", "Log copied to clipboard")
         }
 
         // Only schedule if interval is not "0"
-        val intervalStr = prefs.getString(KEY_INTERVAL, "15") ?: "15"
+        val intervalStr = prefs.getString(Constants.KEY_INTERVAL, "15") ?: "15"
         if (intervalStr != "0") {
             scheduleSyncWork(intervalStr.toLong())
         } else {
@@ -166,16 +156,16 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                PERMISSION_REQUEST_LOCATION
+                Constants.PERMISSION_REQUEST_LOCATION
             )
         } else {
-            val alreadyRequested = prefs.getBoolean(KEY_PERMISSION_REQUESTED, false)
+            val alreadyRequested = prefs.getBoolean(Constants.KEY_PERMISSION_REQUESTED, false)
             if (!alreadyRequested) {
-                prefs.edit().putBoolean(KEY_PERMISSION_REQUESTED, true).apply()
+                prefs.edit().putBoolean(Constants.KEY_PERMISSION_REQUESTED, true).apply()
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    PERMISSION_REQUEST_LOCATION
+                    Constants.PERMISSION_REQUEST_LOCATION
                 )
             } else {
                 android.app.AlertDialog.Builder(this)
@@ -199,25 +189,18 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
-            PERMISSION_REQUEST_LOCATION -> {
+            Constants.PERMISSION_REQUEST_LOCATION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     AppLog.append(TAG, "I", "Location permission granted")
-                    Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
-                    detectAndFillSsid()
                 } else {
-                    Toast.makeText(this, R.string.ssid_unknown_toast, Toast.LENGTH_LONG).show()
+                    AppLog.append(TAG, "W", "Location permission denied")
                 }
             }
-            PERMISSION_REQUEST_BACKGROUND_LOCATION -> {
+            Constants.PERMISSION_REQUEST_BACKGROUND_LOCATION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     AppLog.append(TAG, "I", "Background location granted — SSID readable at all times")
-                    Toast.makeText(this, "Location allowed all the time", Toast.LENGTH_SHORT).show()
-                    detectAndFillSsid()
                 } else {
                     AppLog.append(TAG, "W", "Background location denied — SSID only readable when app is open")
-                    Toast.makeText(this, "SSID detection works only while app is open", Toast.LENGTH_LONG).show()
-                    // Still fill SSID since foreground access works right now
-                    detectAndFillSsid()
                 }
             }
         }
@@ -225,27 +208,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestBackgroundLocationPermission() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            val alreadyRequested = prefs.getBoolean(KEY_BG_PERMISSION_REQUESTED, false)
+            val alreadyRequested = prefs.getBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, false)
             if (alreadyRequested) {
-                // User already chose; don't nag, just open settings
-                Toast.makeText(
-                    this,
-                    "To allow SSID detection in background, enable 'Allow all the time' in app settings",
-                    Toast.LENGTH_LONG
-                ).show()
-                detectAndFillSsid() // fill with foreground access at least
+                // User already chose; don't nag
+                AppLog.append(TAG, "W", "Background location already denied — enable 'Allow all the time' in app settings")
                 return
             }
-            prefs.edit().putBoolean(KEY_BG_PERMISSION_REQUESTED, true).apply()
+            prefs.edit().putBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, true).apply()
 
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
-                PERMISSION_REQUEST_BACKGROUND_LOCATION
+                Constants.PERMISSION_REQUEST_BACKGROUND_LOCATION
             )
         } else {
-            // Android 9 and below — foreground location is enough
-            detectAndFillSsid()
+            // Android 9 and below — no separate background permission
         }
     }
 
@@ -333,37 +310,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun detectAndFillSsid() {
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as? WifiManager
-        val ssid = wifiManager?.connectionInfo?.ssid?.removeSurrounding("\"") ?: ""
+        val ssid = getCurrentSsid(TAG, this)
 
-        if (ssid.isNotEmpty() && ssid != "<unknown ssid>") {
+        if (!ssid.isNullOrEmpty() && ssid != "<unknown ssid>") {
             ssidInput.setText(ssid)
-            Toast.makeText(this, getString(R.string.ssid_detected_toast, ssid), Toast.LENGTH_SHORT).show()
             AppLog.append(TAG, "I", "Detected SSID: $ssid")
         } else {
-            Toast.makeText(this, R.string.ssid_unknown_toast, Toast.LENGTH_LONG).show()
             AppLog.append(TAG, "W", "Could not detect SSID")
         }
     }
 
     private fun scheduleSyncWork(intervalMinutes: Long) {
-        // Cancel all old work first (clears stale OneTimeWorkRequests from previous runs)
         WorkManager.getInstance(this).cancelAllWork()
-
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
-            .build()
-
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE,
-            syncRequest
-        )
-
+        schedulePeriodicSync(this, intervalMinutes)
         AppLog.append(TAG, "I", "Sync scheduled every ${intervalMinutes}min")
         syncScheduled = true
     }

@@ -2,8 +2,7 @@ package com.oksidi.syncerson
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.wifi.WifiManager
+import android.net.wifi.WifiInfo
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
@@ -25,10 +24,10 @@ class SyncWorker(
         AppLog.append(TAG, "I", "SyncWorker started")
 
         val prefs = applicationContext.getSharedPreferences(
-            MainActivity.PREFS_NAME, Context.MODE_PRIVATE
+            Constants.PREFS_NAME, Context.MODE_PRIVATE
         )
-        val homeSsid = prefs.getString(MainActivity.KEY_SSID, null).orEmpty()
-        val serverUrl = prefs.getString(MainActivity.KEY_SERVER_URL, null).orEmpty()
+        val homeSsid = prefs.getString(Constants.KEY_SSID, null).orEmpty()
+        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null).orEmpty()
 
         if (serverUrl.isEmpty()) {
             AppLog.append(TAG, "W", "No server URL configured, skipping sync")
@@ -36,7 +35,7 @@ class SyncWorker(
         }
 
         // 1. Check if we're on home WiFi
-        if (!isConnectedToHomeWifi(homeSsid)) {
+        if (!isConnectedToWifi(homeSsid)) {
             AppLog.append(TAG, "I", "Not on home WiFi, skipping sync")
             return@withContext Result.retry()
         }
@@ -53,29 +52,11 @@ class SyncWorker(
         }
     }
 
-    private fun isConnectedToHomeWifi(homeSsid: String): Boolean {
-        val connectivityManager =
-            applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: run {
-            return false
-        }
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: run {
-            return false
-        }
+    private fun isConnectedToWifi(homeSsid: String): Boolean {
+        if (homeSsid.isEmpty()) return true
 
-        val hasWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-        val hasEthernet = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-
-        // Accept WiFi or Ethernet (emulator uses Ethernet)
-        if (!hasWifi && !hasEthernet) {
-            return false
-        }
-
-        // Check specific SSID if configured
-        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-        val currentSsid = wifiManager?.connectionInfo?.ssid?.removeSurrounding("\"")
-
-        if (homeSsid.isNotEmpty() && currentSsid != homeSsid) {
+        val currentSsid = getCurrentSsid(TAG, applicationContext)
+        if (currentSsid != homeSsid) {
             AppLog.append(TAG, "D", "SSID mismatch: current=$currentSsid, required=$homeSsid")
             return false
         }
