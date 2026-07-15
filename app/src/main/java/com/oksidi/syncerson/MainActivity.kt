@@ -223,23 +223,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestBackgroundLocationPermission() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            val alreadyRequested = prefs.getBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, false)
-            if (alreadyRequested) {
-                // User already chose; don't nag
-                AppLog.append(TAG, "W", "Background location already denied — enable 'Allow all the time' in app settings")
-                return
-            }
-            prefs.edit().putBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, true).apply()
-
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
-                Constants.PERMISSION_REQUEST_BACKGROUND_LOCATION
-            )
-        } else {
-            // Android 9 and below — no separate background permission
+        val alreadyRequested = prefs.getBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, false)
+        if (alreadyRequested) {
+            // User already chose; don't nag
+            AppLog.append(TAG, "W", "Background location already denied — enable 'Allow all the time' in app settings")
+            return
         }
+        prefs.edit().putBoolean(Constants.KEY_BG_PERMISSION_REQUESTED, true).apply()
+
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+            Constants.PERMISSION_REQUEST_BACKGROUND_LOCATION
+        )
     }
 
     override fun onResume() {
@@ -271,13 +267,9 @@ class MainActivity : AppCompatActivity() {
             this, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        val bgGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true // Android 9 and below: foreground == all the time
-        }
+        val bgGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
 
         // Location permission row
         if (fgGranted) {
@@ -296,32 +288,22 @@ class MainActivity : AppCompatActivity() {
             detectButton.alpha = 0.5f
         }
 
-        // Background location permission row (only on Android 10+)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            if (!fgGranted) {
-                // Hide background row if foreground isn't even granted
-                bgLocationPermissionStatus.visibility = android.view.View.GONE
-                grantBgLocationPermissionButton.visibility = android.view.View.GONE
-            } else if (bgGranted) {
-                bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
-                bgLocationPermissionStatus.text = "✓ Granted"
-                bgLocationPermissionStatus.setTextColor(
-                    ContextCompat.getColor(this, android.R.color.holo_green_dark))
-                grantBgLocationPermissionButton.visibility = android.view.View.GONE
-            } else {
-                bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
-                bgLocationPermissionStatus.text = "✗ Not granted (needed for background SSID)"
-                bgLocationPermissionStatus.setTextColor(
-                    ContextCompat.getColor(this, android.R.color.holo_red_dark))
-                grantBgLocationPermissionButton.visibility = android.view.View.VISIBLE
-            }
-        } else {
-            // Android 9 and below — no separate background permission
-            bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
-            bgLocationPermissionStatus.text = "N/A (Android 9 or below)"
-            bgLocationPermissionStatus.setTextColor(
-                ContextCompat.getColor(this, android.R.color.darker_gray))
+        // Background location permission row
+        if (!fgGranted) {
+            bgLocationPermissionStatus.visibility = android.view.View.GONE
             grantBgLocationPermissionButton.visibility = android.view.View.GONE
+        } else if (bgGranted) {
+            bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
+            bgLocationPermissionStatus.text = "✓ Granted"
+            bgLocationPermissionStatus.setTextColor(
+                ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            grantBgLocationPermissionButton.visibility = android.view.View.GONE
+        } else {
+            bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
+            bgLocationPermissionStatus.text = "✗ Not granted (needed for background SSID)"
+            bgLocationPermissionStatus.setTextColor(
+                ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            grantBgLocationPermissionButton.visibility = android.view.View.VISIBLE
         }
     }
 
