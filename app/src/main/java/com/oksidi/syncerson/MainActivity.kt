@@ -19,13 +19,6 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
@@ -433,10 +426,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runNow() {
-        val request = OneTimeWorkRequestBuilder<SyncWorker>()
-            .build()
-
-        WorkManager.getInstance(this).enqueue(request)
+        enqueueSyncWorker(this)
         AppLog.append(TAG, "I", "One-shot sync work enqueued")
     }
 }

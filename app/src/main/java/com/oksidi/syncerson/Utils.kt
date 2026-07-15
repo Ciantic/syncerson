@@ -6,7 +6,9 @@ import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -35,9 +37,20 @@ fun getCurrentSsid(tag: String, context: Context): String? {
     return null
 }
 
+fun enqueueSyncWorker(context: Context) {
+    val request = OneTimeWorkRequestBuilder<SyncWorker>()
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        Constants.SYNC_WORK_NAME,
+        ExistingWorkPolicy.REPLACE,
+        request
+    )
+}
+
 fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
     if (intervalMinutes <= 0) {
-        WorkManager.getInstance(context).cancelUniqueWork(Constants.SYNC_WORK_NAME)
+        WorkManager.getInstance(context).cancelUniqueWork(Constants.PERIODIC_WORK_NAME)
         AppLog.append("Sync", "I", "Periodic sync off")
         return
     }
@@ -46,12 +59,12 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
         .setRequiredNetworkType(NetworkType.UNMETERED)
         .build()
 
-    val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes, TimeUnit.MINUTES)
+    val syncRequest = PeriodicWorkRequestBuilder<PeriodicWorker>(intervalMinutes, TimeUnit.MINUTES)
         .setConstraints(constraints)
         .build()
 
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-        Constants.SYNC_WORK_NAME,
+        Constants.PERIODIC_WORK_NAME,
         ExistingPeriodicWorkPolicy.REPLACE,
         syncRequest
     )
