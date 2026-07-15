@@ -280,7 +280,10 @@ class MainActivity : AppCompatActivity() {
 
         // Background location permission row
         if (!fgGranted) {
-            bgLocationPermissionStatus.visibility = android.view.View.GONE
+            bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
+            bgLocationPermissionStatus.text = "✗ Not granted (needs location first)"
+            bgLocationPermissionStatus.setTextColor(
+                ContextCompat.getColor(this, android.R.color.holo_red_dark))
             grantBgLocationPermissionButton.visibility = android.view.View.GONE
         } else if (bgGranted) {
             bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
