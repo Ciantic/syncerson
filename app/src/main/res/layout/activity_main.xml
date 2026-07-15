@@ -4,15 +4,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center_horizontal">
+    android:padding="24dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="3"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello, Syncerson!"
         android:textSize="24sp"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="16dp" />
 
     <!-- Location permission row -->
     <TextView
@@ -28,7 +39,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="8dp">
 
         <TextView
             android:id="@+id/locationPermissionStatus"
@@ -62,7 +73,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="12dp">
 
         <TextView
             android:id="@+id/bgLocationPermissionStatus"
@@ -96,7 +107,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="4dp">
 
         <TextView
             android:id="@+id/bootReceiverStatus"
@@ -121,7 +132,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="12dp">
 
         <TextView
             android:id="@+id/powerReceiverStatus"
@@ -140,13 +151,14 @@
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
+
     <!-- Repeat interval -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="8dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -168,8 +180,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="12sp"
-        android:layout_marginBottom="16dp" />
-
+        android:layout_marginBottom="8dp" />
 
     <!-- Server setup section -->
     <TextView
@@ -186,7 +197,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="8dp">
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
@@ -212,12 +223,12 @@
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
-    
+
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/server_url_hint"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="12dp">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/serverUrlInput"
@@ -227,7 +238,6 @@
             android:text="" />
 
     </com.google.android.material.textfield.TextInputLayout>
-
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -250,13 +260,16 @@
 
     </LinearLayout>
 
+        </LinearLayout>
+    </ScrollView>
+
     <!-- Server log section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="8dp"
         android:layout_marginBottom="4dp">
 
         <TextView
