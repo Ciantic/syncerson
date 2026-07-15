@@ -204,26 +204,28 @@
         android:layout_marginBottom="8dp">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/repeat_interval_label"
-            android:textSize="14sp"
-            android:layout_marginEnd="8dp" />
-
-        <Spinner
-            android:id="@+id/intervalSpinner"
+            android:id="@+id/periodicSyncStatus"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:layout_marginEnd="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="120dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/intervalSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/periodicSyncStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:layout_marginBottom="8dp" />
 
     <!-- Server setup section -->
     <TextView
@@ -291,7 +293,8 @@
             android:id="@+id/saveButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/save_button" />
+            android:text="@string/save_button"
+            style="@style/Widget.Material3.Button" />
 
         <Button
             android:id="@+id/syncNowButton"

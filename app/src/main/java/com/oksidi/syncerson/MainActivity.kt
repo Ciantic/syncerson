@@ -14,8 +14,8 @@ import android.provider.MediaStore
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.TextView
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -90,18 +90,18 @@ class MainActivity : AppCompatActivity() {
         val saveButton = findViewById<Button>(R.id.saveButton)
         val syncNowButton = findViewById<Button>(R.id.syncNowButton)
         val copyLogButton = findViewById<TextView>(R.id.copyLogButton)
-        val intervalSpinner = findViewById<Spinner>(R.id.intervalSpinner)
+        val intervalSpinner = findViewById<MaterialAutoCompleteTextView>(R.id.intervalSpinner)
 
-        // Interval spinner
+        // Interval dropdown
         val intervalOptions = resources.getStringArray(R.array.repeat_intervals)
         val intervalValues = resources.getStringArray(R.array.repeat_interval_values)
-        intervalSpinner.adapter = android.widget.ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item, intervalOptions)
+        intervalSpinner.setAdapter(android.widget.ArrayAdapter(
+            this, android.R.layout.simple_dropdown_item_1line, intervalOptions))
 
         // Restore saved interval selection
         val savedInterval = prefs.getString(Constants.KEY_INTERVAL, "0") ?: "0"
         val savedIndex = intervalValues.indexOf(savedInterval)
-        if (savedIndex >= 0) intervalSpinner.setSelection(savedIndex)
+        if (savedIndex >= 0) intervalSpinner.setText(intervalOptions[savedIndex], false)
 
         // Load saved values
         ssidInput.setText(prefs.getString(Constants.KEY_SSID, ""))
@@ -143,8 +143,9 @@ class MainActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             val ssid = ssidInput.text.toString().trim()
             val serverUrl = serverUrlInput.text.toString().trim()
-            val selectedIntervalIdx = intervalSpinner.selectedItemPosition
-            val interval = intervalValues[selectedIntervalIdx]
+            val selectedText = intervalSpinner.text.toString()
+            val selectedIntervalIdx = intervalOptions.indexOf(selectedText)
+            val interval = if (selectedIntervalIdx >= 0) intervalValues[selectedIntervalIdx] else "0"
 
             prefs.edit()
                 .putString(Constants.KEY_SSID, ssid)
