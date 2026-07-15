@@ -44,14 +44,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var togglePowerReceiverButton: Button
     private lateinit var logOutput: TextView
     private lateinit var logScrollView: ScrollView
-    private lateinit var syncStatusText: TextView
-    private var syncScheduled = false
+    private lateinit var periodicSyncStatusText: TextView
+    private var periodicSyncScheduled = false
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshUiRunnable = object : Runnable {
         override fun run() {
             logOutput.text = AppLog.getText()
             logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
-            updateSyncStatusDisplay()
+            updatePeriodicSyncStatusDisplay()
             updatePermissionStatus()
             updateReceiverToggles()
             refreshHandler.postDelayed(this, 1000)
@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         togglePowerReceiverButton = findViewById(R.id.togglePowerReceiverButton)
         logOutput = findViewById(R.id.logOutput)
         logScrollView = findViewById(R.id.logScrollView)
-        syncStatusText = findViewById(R.id.syncStatus)
+        periodicSyncStatusText = findViewById(R.id.periodicSyncStatus)
         val serverUrlInput = findViewById<EditText>(R.id.serverUrlInput)
         detectButton = findViewById(R.id.detectButton)
         val saveButton = findViewById<Button>(R.id.saveButton)
@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
             this, android.R.layout.simple_spinner_dropdown_item, intervalOptions)
 
         // Restore saved interval selection
-        val savedInterval = prefs.getString(Constants.KEY_INTERVAL, "15") ?: "15"
+        val savedInterval = prefs.getString(Constants.KEY_INTERVAL, "0") ?: "0"
         val savedIndex = intervalValues.indexOf(savedInterval)
         if (savedIndex >= 0) intervalSpinner.setSelection(savedIndex)
 
@@ -134,13 +134,7 @@ class MainActivity : AppCompatActivity() {
                 .putString(Constants.KEY_INTERVAL, interval)
                 .apply()
 
-            if (interval == "0") {
-                WorkManager.getInstance(this).cancelAllWork()
-                syncScheduled = false
-                AppLog.append(TAG, "I", "Sync disabled (Disabled selected)")
-            } else {
-                scheduleSyncWork(interval.toLong())
-            }
+            scheduleSyncWork(interval.toLong())
 
             AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, URL=$serverUrl")
         }
@@ -157,13 +151,9 @@ class MainActivity : AppCompatActivity() {
             AppLog.append(TAG, "I", "Log copied to clipboard")
         }
 
-        // Only schedule if interval is not "0"
-        val intervalStr = prefs.getString(Constants.KEY_INTERVAL, "15") ?: "15"
-        if (intervalStr != "0") {
-            scheduleSyncWork(intervalStr.toLong())
-        } else {
-            syncScheduled = false
-        }
+        // Schedule with saved interval (0 = disabled)
+        val intervalStr = prefs.getString(Constants.KEY_INTERVAL, "0") ?: "0"
+        scheduleSyncWork(intervalStr.toLong())
     }
 
     private fun requestLocationPermission() {
@@ -250,14 +240,14 @@ class MainActivity : AppCompatActivity() {
         refreshHandler.removeCallbacks(refreshUiRunnable)
     }
 
-    private fun updateSyncStatusDisplay() {
-        syncStatusText.text = getString(
-            if (syncScheduled) R.string.sync_status_scheduled else R.string.sync_status_not_scheduled
+    private fun updatePeriodicSyncStatusDisplay() {
+        periodicSyncStatusText.text = getString(
+            if (periodicSyncScheduled) R.string.sync_status_scheduled else R.string.sync_status_not_scheduled
         )
-        syncStatusText.setTextColor(
+        periodicSyncStatusText.setTextColor(
             ContextCompat.getColor(
                 this,
-                if (syncScheduled) android.R.color.holo_green_dark else android.R.color.holo_orange_dark
+                if (periodicSyncScheduled) android.R.color.holo_green_dark else android.R.color.holo_orange_dark
             )
         )
     }
@@ -363,10 +353,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scheduleSyncWork(intervalMinutes: Long) {
-        WorkManager.getInstance(this).cancelAllWork()
         schedulePeriodicSync(this, intervalMinutes)
-        AppLog.append(TAG, "I", "Sync scheduled every ${intervalMinutes}min")
-        syncScheduled = true
+        periodicSyncScheduled = intervalMinutes > 0
+        AppLog.append(TAG, "I",
+            if (intervalMinutes > 0) "Sync scheduled every ${intervalMinutes}min"
+            else "Periodic sync off"
+        )
     }
 
     private fun runNow() {

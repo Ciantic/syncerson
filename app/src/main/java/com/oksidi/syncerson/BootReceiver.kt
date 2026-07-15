@@ -10,8 +10,7 @@ class BootReceiver : BroadcastReceiver() {
         AppLog.append("BootReceiver", "I", "Device booted — rescheduling sync")
 
         val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val intervalMinutes = prefs.getString(Constants.KEY_INTERVAL, "15")?.toLongOrNull()
-            ?.takeIf { it > 0 } ?: 15L
+        val intervalMinutes = prefs.getString(Constants.KEY_INTERVAL, "0")?.toLongOrNull() ?: 0L
 
         schedulePeriodicSync(context, intervalMinutes)
         AppLog.append("BootReceiver", "I", "Sync scheduled every ${intervalMinutes}min")

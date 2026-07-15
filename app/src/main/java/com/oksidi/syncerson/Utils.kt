@@ -42,6 +42,12 @@ fun getCurrentSsid(tag: String, context: Context): String? {
 }
 
 fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
+    if (intervalMinutes <= 0) {
+        WorkManager.getInstance(context).cancelUniqueWork(Constants.SYNC_WORK_NAME)
+        AppLog.append("Sync", "I", "Periodic sync off")
+        return
+    }
+
     val constraints = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.UNMETERED)
         .build()
