@@ -42,13 +42,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionSettingsButton: Button
     private lateinit var logOutput: TextView
     private lateinit var logScrollView: ScrollView
+    private lateinit var followLogButton: TextView
     private lateinit var periodicSyncStatusText: TextView
     private var periodicSyncScheduled = false
+    private var followLog = true
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshUiRunnable = object : Runnable {
         override fun run() {
             logOutput.text = AppLog.getText()
-            logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
+            if (followLog) {
+                logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
+            }
             updatePeriodicSyncStatusDisplay()
             updatePermissionStatus()
             updateReceiverToggles()
@@ -77,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         permissionSettingsButton = findViewById(R.id.permissionSettingsButton)
         logOutput = findViewById(R.id.logOutput)
         logScrollView = findViewById(R.id.logScrollView)
+        followLogButton = findViewById(R.id.followLogButton)
         periodicSyncStatusText = findViewById(R.id.periodicSyncStatus)
         val serverUrlInput = findViewById<EditText>(R.id.serverUrlInput)
         detectButton = findViewById(R.id.detectButton)
@@ -154,6 +159,14 @@ class MainActivity : AppCompatActivity() {
         syncNowButton.setOnClickListener {
             AppLog.append(TAG, "I", "Manual sync triggered by user")
             runNow()
+        }
+
+        followLogButton.setOnClickListener {
+            followLog = !followLog
+            followLogButton.text = getString(if (followLog) R.string.follow_log_on else R.string.follow_log_off)
+            if (followLog) {
+                logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
+            }
         }
 
         copyLogButton.setOnClickListener {
