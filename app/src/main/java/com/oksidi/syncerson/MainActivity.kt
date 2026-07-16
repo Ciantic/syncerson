@@ -19,6 +19,8 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,7 +46,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var logScrollView: ScrollView
     private lateinit var followLogButton: TextView
     private lateinit var periodicSyncStatusText: TextView
-    private var periodicSyncScheduled = false
     private var followLog = true
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshUiRunnable = object : Runnable {
@@ -176,9 +177,6 @@ class MainActivity : AppCompatActivity() {
             AppLog.append(TAG, "I", "Log copied to clipboard")
         }
 
-        // Schedule with saved interval (0 = disabled)
-        val intervalStr = prefs.getString(Constants.KEY_INTERVAL, "0") ?: "0"
-        scheduleSyncWork(intervalStr.toLong())
     }
 
     private fun requestLocationPermission() {
@@ -275,13 +273,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePeriodicSyncStatusDisplay() {
+        val workInfos = WorkManager.getInstance(applicationContext)
+            .getWorkInfosForUniqueWork(Constants.PERIODIC_WORK_NAME)
+            .get()
+        val scheduled = workInfos.any {
+            it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING
+        }
         periodicSyncStatusText.text = getString(
-            if (periodicSyncScheduled) R.string.sync_status_scheduled else R.string.sync_status_not_scheduled
+            if (scheduled) R.string.sync_status_scheduled else R.string.sync_status_not_scheduled
         )
         periodicSyncStatusText.setTextColor(
             ContextCompat.getColor(
                 this,
-                if (periodicSyncScheduled) android.R.color.holo_green_dark else android.R.color.holo_orange_dark
+                if (scheduled) android.R.color.holo_green_dark else android.R.color.holo_orange_dark
             )
         )
     }
@@ -415,7 +419,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun scheduleSyncWork(intervalMinutes: Long) {
         schedulePeriodicSync(this, intervalMinutes)
-        periodicSyncScheduled = intervalMinutes > 0
         AppLog.append(TAG, "I",
             if (intervalMinutes > 0) "Sync scheduled every ${intervalMinutes}min"
             else "Periodic sync off"

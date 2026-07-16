@@ -7,12 +7,9 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         AppLog.init(context.applicationContext)
-        AppLog.append("BootReceiver", "I", "Device booted — rescheduling sync")
+        AppLog.append("BootReceiver", "I", "Device booted — running one-shot sync")
 
-        val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val intervalMinutes = prefs.getString(Constants.KEY_INTERVAL, "0")?.toLongOrNull() ?: 0L
-
-        schedulePeriodicSync(context, intervalMinutes)
-        AppLog.append("BootReceiver", "I", "Sync scheduled every ${intervalMinutes}min")
+        enqueueSyncWorker(context)
+        AppLog.append("BootReceiver", "I", "One-shot sync enqueued")
     }
 }
