@@ -152,7 +152,7 @@ class MainActivity : AppCompatActivity() {
                 .putString(Constants.KEY_INTERVAL, interval)
                 .apply()
 
-            scheduleSyncWork(interval.toLong())
+            schedulePeriodicSync(this, interval.toLong())
 
             AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, URL=$serverUrl")
         }
@@ -415,14 +415,6 @@ class MainActivity : AppCompatActivity() {
             )
         )
         button.text = if (enabled) "Disable" else "Enable"
-    }
-
-    private fun scheduleSyncWork(intervalMinutes: Long) {
-        schedulePeriodicSync(this, intervalMinutes)
-        AppLog.append(TAG, "I",
-            if (intervalMinutes > 0) "Sync scheduled every ${intervalMinutes}min"
-            else "Periodic sync off"
-        )
     }
 
     /** Returns photo count, or -1 if access is limited (Android 14+). */

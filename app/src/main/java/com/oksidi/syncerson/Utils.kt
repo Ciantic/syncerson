@@ -62,6 +62,8 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
         WorkManager.getInstance(context).cancelUniqueWork(Constants.PERIODIC_WORK_NAME)
         AppLog.append("Sync", "I", "Periodic sync off")
         return
+    } else {
+        AppLog.append("Sync", "I", "Sync scheduled every ${intervalMinutes}min")
     }
 
     val syncRequest = PeriodicWorkRequestBuilder<PeriodicWorker>(intervalMinutes, TimeUnit.MINUTES)
