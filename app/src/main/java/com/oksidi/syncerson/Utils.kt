@@ -38,13 +38,22 @@ fun getCurrentSsid(tag: String, context: Context): String? {
 }
 
 fun enqueueSyncWorker(context: Context) {
-    val request = OneTimeWorkRequestBuilder<SyncWorker>()
-        .build()
+    val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    val homeSsid = prefs.getString(Constants.KEY_SSID, null).orEmpty()
+
+    val requestBuilder = OneTimeWorkRequestBuilder<SyncWorker>()
+
+    if (homeSsid.isNotEmpty()) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .build()
+        requestBuilder.setConstraints(constraints)
+    }
 
     WorkManager.getInstance(context).enqueueUniqueWork(
         Constants.SYNC_WORK_NAME,
         ExistingWorkPolicy.REPLACE,
-        request
+        requestBuilder.build()
     )
 }
 
@@ -55,12 +64,7 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
         return
     }
 
-    val constraints = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.UNMETERED)
-        .build()
-
     val syncRequest = PeriodicWorkRequestBuilder<PeriodicWorker>(intervalMinutes, TimeUnit.MINUTES)
-        .setConstraints(constraints)
         .build()
 
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
