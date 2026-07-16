@@ -34,13 +34,13 @@ class SyncWorker(
 
         if (serverUrl.isEmpty()) {
             AppLog.append(TAG, "W", "No server URL configured, skipping sync")
-            return@withContext Result.retry()
+            return@withContext Result.failure()
         }
 
         // 1. Check if we're on home WiFi
         if (!isConnectedToWifi(homeSsid)) {
             AppLog.append(TAG, "I", "Not on home WiFi, skipping sync")
-            return@withContext Result.retry()
+            return@withContext Result.failure()
         }
 
         // 2. Send data to server
@@ -55,7 +55,8 @@ class SyncWorker(
             Result.success()
         } catch (e: Exception) {
             AppLog.append(TAG, "E", "Sync failed: ${e.message}")
-            Result.retry()
+            // TODO: Consider retrying? And change also enqueueSyncWorker to try only once more.
+            Result.failure()
         }
     }
 
