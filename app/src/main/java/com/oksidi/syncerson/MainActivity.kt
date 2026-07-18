@@ -146,16 +146,18 @@ class MainActivity : AppCompatActivity() {
             toggleReceiver(ComponentName(this, PowerConnectedReceiver::class.java))
         }
 
-        // Auto-save each text field with 300ms debounce
-        val debouncer = Debouncer(300L)
+        // Auto-save each text field with 300ms debounce (separate per field)
+        val ssidDebounce = Debouncer(300L)
+        val lanIpDebounce = Debouncer(300L)
+        val urlDebounce = Debouncer(300L)
         ssidInput.doAfterTextChanged {
-            debouncer.submit { prefs.edit().putString(Constants.KEY_SSID, it?.toString()?.trim() ?: "").apply() }
+            ssidDebounce.submit { prefs.edit().putString(Constants.KEY_SSID, it?.toString()?.trim() ?: "").apply() }
         }
         lanIpSuffixInput.doAfterTextChanged {
-            debouncer.submit { prefs.edit().putString(Constants.KEY_LAN_IP_SUFFIX, it?.toString()?.trim() ?: "").apply() }
+            lanIpDebounce.submit { prefs.edit().putString(Constants.KEY_LAN_IP_SUFFIX, it?.toString()?.trim() ?: "").apply() }
         }
         serverUrlInput.doAfterTextChanged {
-            debouncer.submit { prefs.edit().putString(Constants.KEY_SERVER_URL, it?.toString()?.trim() ?: "").apply() }
+            urlDebounce.submit { prefs.edit().putString(Constants.KEY_SERVER_URL, it?.toString()?.trim() ?: "").apply() }
         }
 
         // Auto-save interval on blur or item select
@@ -453,13 +455,30 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-/** Debounces rapid calls — only the last one within [delayMs] actually runs. */
-class Debouncer(private val delayMs: Long) {
+/** Debounces rapid calls — only the last one within [delayMs] runs, but always runs within [maxWaitMs]. */
+class Debouncer(
+    private val delayMs: Long,
+    private val maxWaitMs: Long = 1000L
+) {
     private val handler = Handler(Looper.getMainLooper())
     private var runnable: Runnable? = null
+    private var maxWaitRunnable: Runnable? = null
+    private var action: (() -> Unit)? = null
 
     fun submit(action: () -> Unit) {
+        this.action = action
         runnable?.let { handler.removeCallbacks(it) }
-        runnable = Runnable { action() }.also { handler.postDelayed(it, delayMs) }
+        runnable = Runnable { flush() }.also { handler.postDelayed(it, delayMs) }
+        if (maxWaitRunnable == null) {
+            maxWaitRunnable = Runnable { flush() }.also { handler.postDelayed(it, maxWaitMs) }
+        }
+    }
+
+    private fun flush() {
+        runnable?.let { handler.removeCallbacks(it) }
+        maxWaitRunnable?.let { handler.removeCallbacks(it) }
+        runnable = null
+        maxWaitRunnable = null
+        action?.invoke()
     }
 }
