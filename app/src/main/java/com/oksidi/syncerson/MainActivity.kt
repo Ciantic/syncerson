@@ -107,16 +107,16 @@ class MainActivity : AppCompatActivity() {
         val intervalSpinner = findViewById<MaterialAutoCompleteTextView>(R.id.intervalSpinner)
         restrictModeSpinner = findViewById(R.id.restrictModeSpinner)
 
-        // Restrict mode dropdown
-        val restrictModeOptions = resources.getStringArray(R.array.restrict_modes)
-        val restrictModeValues = resources.getStringArray(R.array.restrict_mode_values)
+        // Restrict mode dropdown — built from enum, single source of truth
+        val restrictModes = RestrictMode.entries
+        val restrictModeLabels = restrictModes.map { it.displayName(this) }
         restrictModeSpinner.setAdapter(android.widget.ArrayAdapter(
-            this, android.R.layout.simple_dropdown_item_1line, restrictModeOptions))
+            this, android.R.layout.simple_dropdown_item_1line, restrictModeLabels))
 
         // Restore saved restrict mode
-        val savedRestrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE) ?: Constants.RESTRICT_MODE_NONE
-        val savedRestrictIndex = restrictModeValues.indexOf(savedRestrictMode)
-        if (savedRestrictIndex >= 0) restrictModeSpinner.setText(restrictModeOptions[savedRestrictIndex], false)
+        val savedRestrictMode = RestrictMode.fromPrefKey(prefs.getString(Constants.KEY_RESTRICT_MODE, null))
+        val savedRestrictIndex = restrictModes.indexOf(savedRestrictMode)
+        if (savedRestrictIndex >= 0) restrictModeSpinner.setText(restrictModeLabels[savedRestrictIndex], false)
 
         // Interval dropdown
         val intervalOptions = resources.getStringArray(R.array.repeat_intervals)
@@ -174,9 +174,9 @@ class MainActivity : AppCompatActivity() {
         // Auto-save restrict mode on select
         val saveRestrictMode = {
             val selectedText = restrictModeSpinner.text.toString()
-            val idx = restrictModeOptions.indexOf(selectedText)
-            val mode = if (idx >= 0) restrictModeValues[idx] else Constants.RESTRICT_MODE_NONE
-            prefs.edit().putString(Constants.KEY_RESTRICT_MODE, mode).apply()
+            val idx = restrictModeLabels.indexOf(selectedText)
+            val mode = if (idx >= 0) restrictModes[idx] else RestrictMode.NONE
+            prefs.edit().putString(Constants.KEY_RESTRICT_MODE, mode.prefKey).apply()
             updateRestrictModeUi(mode)
             // Re-schedule periodic sync — network constraint may have changed
             val interval = (prefs.getString(Constants.KEY_INTERVAL, "0") ?: "0").toLong()
@@ -419,9 +419,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateRestrictModeUi(mode: String) {
-        val showSsid = mode == Constants.RESTRICT_MODE_SSID
-        val showIpSuffix = mode == Constants.RESTRICT_MODE_IP_SUFFIX
+    private fun updateRestrictModeUi(mode: RestrictMode) {
+        val showSsid = mode == RestrictMode.SSID
+        val showIpSuffix = mode == RestrictMode.IP_SUFFIX
         ssidRow.visibility = if (showSsid) android.view.View.VISIBLE else android.view.View.GONE
         ssidHelper.visibility = if (showSsid) android.view.View.VISIBLE else android.view.View.GONE
         lanIpRow.visibility = if (showIpSuffix) android.view.View.VISIBLE else android.view.View.GONE

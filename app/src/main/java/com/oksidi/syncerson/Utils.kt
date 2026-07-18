@@ -73,16 +73,20 @@ fun getDeviceIpAddress(): String? {
 
 fun enqueueSyncWorker(context: Context) {
     val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    val restrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE)
-        ?: Constants.RESTRICT_MODE_NONE
+    val restrictMode = RestrictMode.fromPrefKey(prefs.getString(Constants.KEY_RESTRICT_MODE, null))
 
     val requestBuilder = OneTimeWorkRequestBuilder<SyncWorker>()
 
-    if (restrictMode != Constants.RESTRICT_MODE_NONE) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
-            .build()
-        requestBuilder.setConstraints(constraints)
+    when (restrictMode) {
+        RestrictMode.NONE -> { /* no constraint */ }
+        RestrictMode.WIFI, RestrictMode.SSID, RestrictMode.IP_SUFFIX -> 
+        {
+            requestBuilder.setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.UNMETERED)
+                    .build()
+            )
+        }
     }
 
     WorkManager.getInstance(context).enqueueUniqueWork(
@@ -102,17 +106,20 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
     }
 
     val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    val restrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE)
-        ?: Constants.RESTRICT_MODE_NONE
+    val restrictMode = RestrictMode.fromPrefKey(prefs.getString(Constants.KEY_RESTRICT_MODE, null))
 
     val builder = PeriodicWorkRequestBuilder<PeriodicWorker>(intervalMinutes, TimeUnit.MINUTES)
 
-    if (restrictMode != Constants.RESTRICT_MODE_NONE) {
-        builder.setConstraints(
-            Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.UNMETERED)
-                .build()
-        )
+    when (restrictMode) {
+        RestrictMode.NONE -> { /* no constraint */ }
+        RestrictMode.WIFI, RestrictMode.SSID, RestrictMode.IP_SUFFIX ->
+        {
+            builder.setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.UNMETERED)
+                    .build()
+            )
+        }
     }
 
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(

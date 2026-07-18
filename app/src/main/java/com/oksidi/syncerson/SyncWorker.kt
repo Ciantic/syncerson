@@ -26,8 +26,7 @@ class SyncWorker(
         val prefs = applicationContext.getSharedPreferences(
             Constants.PREFS_NAME, Context.MODE_PRIVATE
         )
-        val restrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE)
-            ?: Constants.RESTRICT_MODE_NONE
+        val restrictMode = RestrictMode.fromPrefKey(prefs.getString(Constants.KEY_RESTRICT_MODE, null))
         val homeSsid = prefs.getString(Constants.KEY_SSID, null).orEmpty()
         val lanIpSuffix = prefs.getString(Constants.KEY_LAN_IP_SUFFIX, null).orEmpty()
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null).orEmpty()
@@ -60,13 +59,13 @@ class SyncWorker(
         }
     }
 
-    private fun isConnectedToKnownNetwork(restrictMode: String, homeSsid: String, lanIpSuffix: String): Boolean {
+    private fun isConnectedToKnownNetwork(restrictMode: RestrictMode, homeSsid: String, lanIpSuffix: String): Boolean {
         when (restrictMode) {
-            Constants.RESTRICT_MODE_NONE -> {
+            RestrictMode.NONE -> {
                 AppLog.append(TAG, "D", "No restriction — allowing all networks")
                 return true
             }
-            Constants.RESTRICT_MODE_WIFI -> {
+            RestrictMode.WIFI -> {
                 // Already constrained by WorkManager UNMETERED, but double-check SSID is readable (i.e. on WiFi)
                 val currentSsid = getCurrentSsid(TAG, applicationContext)
                 if (currentSsid != null) {
@@ -76,7 +75,7 @@ class SyncWorker(
                 AppLog.append(TAG, "D", "Not on WiFi")
                 return false
             }
-            Constants.RESTRICT_MODE_SSID -> {
+            RestrictMode.SSID -> {
                 if (homeSsid.isEmpty()) {
                     AppLog.append(TAG, "D", "SSID not configured, skipping")
                     return false
@@ -89,7 +88,7 @@ class SyncWorker(
                 AppLog.append(TAG, "D", "SSID mismatch: current=$currentSsid, expected=$homeSsid")
                 return false
             }
-            Constants.RESTRICT_MODE_IP_SUFFIX -> {
+            RestrictMode.IP_SUFFIX -> {
                 if (lanIpSuffix.isEmpty()) {
                     AppLog.append(TAG, "D", "IP-suffix not configured, skipping")
                     return false
@@ -102,10 +101,6 @@ class SyncWorker(
                 }
                 AppLog.append(TAG, "D", "LAN IP-suffix mismatch: ip=$ip, prefix=$lanIpSuffix")
                 return false
-            }
-            else -> {
-                AppLog.append(TAG, "W", "Unknown restrict mode: $restrictMode")
-                return true // fallback: allow
             }
         }
     }
