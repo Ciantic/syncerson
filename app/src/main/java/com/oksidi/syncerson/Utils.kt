@@ -73,12 +73,12 @@ fun getDeviceIpAddress(): String? {
 
 fun enqueueSyncWorker(context: Context) {
     val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-    val homeSsid = prefs.getString(Constants.KEY_SSID, null).orEmpty()
-    val lanIpSuffix = prefs.getString(Constants.KEY_LAN_IP_SUFFIX, null).orEmpty()
+    val restrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE)
+        ?: Constants.RESTRICT_MODE_NONE
 
     val requestBuilder = OneTimeWorkRequestBuilder<SyncWorker>()
 
-    if (homeSsid.isNotEmpty() || lanIpSuffix.isNotEmpty()) {
+    if (restrictMode != Constants.RESTRICT_MODE_NONE) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.UNMETERED)
             .build()
@@ -101,12 +101,23 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
         AppLog.append("Sync", "I", "Sync scheduled every ${intervalMinutes}min")
     }
 
-    val syncRequest = PeriodicWorkRequestBuilder<PeriodicWorker>(intervalMinutes, TimeUnit.MINUTES)
-        .build()
+    val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    val restrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE)
+        ?: Constants.RESTRICT_MODE_NONE
+
+    val builder = PeriodicWorkRequestBuilder<PeriodicWorker>(intervalMinutes, TimeUnit.MINUTES)
+
+    if (restrictMode != Constants.RESTRICT_MODE_NONE) {
+        builder.setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .build()
+        )
+    }
 
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
         Constants.PERIODIC_WORK_NAME,
         ExistingPeriodicWorkPolicy.REPLACE,
-        syncRequest
+        builder.build()
     )
 }

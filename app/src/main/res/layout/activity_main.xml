@@ -236,13 +236,31 @@
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
 
-    <!-- SSID row: input + detect button -->
+    <!-- Restrict mode dropdown -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/restrict_label"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_marginBottom="8dp">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/restrictModeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- SSID row: input + detect button (visible when mode=ssid) -->
     <LinearLayout
+        android:id="@+id/ssidRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="4dp"
+        android:visibility="gone">
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
@@ -270,20 +288,23 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/ssidHelper"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/ssid_helper"
         android:textSize="11sp"
         android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginBottom="2dp" />
+        android:layout_marginBottom="6dp"
+        android:visibility="gone" />
 
-    <!-- LAN IP-suffix row -->
+    <!-- LAN IP-suffix row (visible when mode=ip_suffix) -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/lanIpRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/lan_ip_hint"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="4dp"
+        android:visibility="gone">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/lanIpSuffixInput"
@@ -295,12 +316,14 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <TextView
+        android:id="@+id/lanIpHelper"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/lan_ip_helper"
         android:textSize="11sp"
         android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginBottom="2dp" />
+        android:layout_marginBottom="2dp"
+        android:visibility="gone" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"

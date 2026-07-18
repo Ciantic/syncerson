@@ -30,9 +30,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var prefs: SharedPreferences
+    private lateinit var restrictModeSpinner: MaterialAutoCompleteTextView
     private lateinit var ssidInput: EditText
     private lateinit var lanIpSuffixInput: EditText
     private lateinit var detectButton: Button
+    private lateinit var ssidRow: android.view.View
+    private lateinit var ssidHelper: TextView
+    private lateinit var lanIpRow: android.view.View
+    private lateinit var lanIpHelper: TextView
     private lateinit var locationPermissionStatus: TextView
     private lateinit var grantLocationPermissionButton: Button
     private lateinit var bgLocationPermissionStatus: TextView
@@ -76,6 +81,10 @@ class MainActivity : AppCompatActivity() {
 
         ssidInput = findViewById(R.id.ssidInput)
         lanIpSuffixInput = findViewById(R.id.lanIpSuffixInput)
+        ssidRow = findViewById(R.id.ssidRow)
+        ssidHelper = findViewById(R.id.ssidHelper)
+        lanIpRow = findViewById(R.id.lanIpRow)
+        lanIpHelper = findViewById(R.id.lanIpHelper)
         locationPermissionStatus = findViewById(R.id.locationPermissionStatus)
         grantLocationPermissionButton = findViewById(R.id.grantLocationPermissionButton)
         bgLocationPermissionStatus = findViewById(R.id.bgLocationPermissionStatus)
@@ -96,6 +105,18 @@ class MainActivity : AppCompatActivity() {
         val syncNowButton = findViewById<Button>(R.id.syncNowButton)
         val copyLogButton = findViewById<TextView>(R.id.copyLogButton)
         val intervalSpinner = findViewById<MaterialAutoCompleteTextView>(R.id.intervalSpinner)
+        restrictModeSpinner = findViewById(R.id.restrictModeSpinner)
+
+        // Restrict mode dropdown
+        val restrictModeOptions = resources.getStringArray(R.array.restrict_modes)
+        val restrictModeValues = resources.getStringArray(R.array.restrict_mode_values)
+        restrictModeSpinner.setAdapter(android.widget.ArrayAdapter(
+            this, android.R.layout.simple_dropdown_item_1line, restrictModeOptions))
+
+        // Restore saved restrict mode
+        val savedRestrictMode = prefs.getString(Constants.KEY_RESTRICT_MODE, Constants.RESTRICT_MODE_NONE) ?: Constants.RESTRICT_MODE_NONE
+        val savedRestrictIndex = restrictModeValues.indexOf(savedRestrictMode)
+        if (savedRestrictIndex >= 0) restrictModeSpinner.setText(restrictModeOptions[savedRestrictIndex], false)
 
         // Interval dropdown
         val intervalOptions = resources.getStringArray(R.array.repeat_intervals)
@@ -111,6 +132,10 @@ class MainActivity : AppCompatActivity() {
         // Load saved values
         ssidInput.setText(prefs.getString(Constants.KEY_SSID, ""))
         lanIpSuffixInput.setText(prefs.getString(Constants.KEY_LAN_IP_SUFFIX, ""))
+
+        // Show/hide fields based on saved restrict mode
+        updateRestrictModeUi(savedRestrictMode)
+
         serverUrlInput.setText(
             prefs.getString(Constants.KEY_SERVER_URL, null)?.ifEmpty { null }
                 ?: "http://192.168.8.200:8080/sync"
@@ -144,6 +169,22 @@ class MainActivity : AppCompatActivity() {
 
         togglePowerReceiverButton.setOnClickListener {
             toggleReceiver(ComponentName(this, PowerConnectedReceiver::class.java))
+        }
+
+        // Auto-save restrict mode on select
+        val saveRestrictMode = {
+            val selectedText = restrictModeSpinner.text.toString()
+            val idx = restrictModeOptions.indexOf(selectedText)
+            val mode = if (idx >= 0) restrictModeValues[idx] else Constants.RESTRICT_MODE_NONE
+            prefs.edit().putString(Constants.KEY_RESTRICT_MODE, mode).apply()
+            updateRestrictModeUi(mode)
+            // Re-schedule periodic sync — network constraint may have changed
+            val interval = (prefs.getString(Constants.KEY_INTERVAL, "0") ?: "0").toLong()
+            schedulePeriodicSync(this, interval)
+        }
+        restrictModeSpinner.setOnItemClickListener { _, _, _, _ -> saveRestrictMode() }
+        restrictModeSpinner.onFocusChangeListener = android.view.View.OnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) saveRestrictMode()
         }
 
         // Auto-save each text field with 300ms debounce (separate per field)
@@ -376,6 +417,15 @@ class MainActivity : AppCompatActivity() {
                 ContextCompat.getColor(this, android.R.color.holo_red_dark))
             grantMediaPermissionButton.visibility = android.view.View.VISIBLE
         }
+    }
+
+    private fun updateRestrictModeUi(mode: String) {
+        val showSsid = mode == Constants.RESTRICT_MODE_SSID
+        val showIpSuffix = mode == Constants.RESTRICT_MODE_IP_SUFFIX
+        ssidRow.visibility = if (showSsid) android.view.View.VISIBLE else android.view.View.GONE
+        ssidHelper.visibility = if (showSsid) android.view.View.VISIBLE else android.view.View.GONE
+        lanIpRow.visibility = if (showIpSuffix) android.view.View.VISIBLE else android.view.View.GONE
+        lanIpHelper.visibility = if (showIpSuffix) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun detectAndFillSsid() {

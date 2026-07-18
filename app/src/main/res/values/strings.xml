@@ -19,10 +19,23 @@
     <string name="copy_log_button">Copy</string>
     <string name="follow_log_on">Unfollow</string>
     <string name="follow_log_off">Follow</string>
-    <string name="ssid_hint">Restrict to SSID</string>
-    <string name="ssid_helper">Trigger when SSID matches, requires location permissions.</string>
-    <string name="lan_ip_hint">Restrict to IP-suffix (e.g. 192.168.8)</string>
-    <string name="lan_ip_helper">Trigger only if your phone IP matches, doesn\'t require extra permissions.</string>
+    <string name="restrict_label">Restrict</string>
+    <string-array name="restrict_modes">
+        <item>No restriction</item>
+        <item>WiFi only</item>
+        <item>WiFi with SSID</item>
+        <item>WiFi with IP-suffix</item>
+    </string-array>
+    <string-array name="restrict_mode_values">
+        <item>none</item>
+        <item>wifi</item>
+        <item>ssid</item>
+        <item>ip_suffix</item>
+    </string-array>
+    <string name="ssid_hint">SSID</string>
+    <string name="ssid_helper">Sync only when connected to this WiFi network. Requires location permissions.</string>
+    <string name="lan_ip_hint">IP-suffix (e.g. 192.168.8)</string>
+    <string name="lan_ip_helper">Sync only when your phone IP starts with this prefix. Doesn\'t require extra permissions.</string>
     <string name="server_url_label">Server URL</string>
     <string name="server_url_hint">Server URL</string>
     <string name="sync_now_button">Sync now</string>
