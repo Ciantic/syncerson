@@ -318,27 +318,12 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <LinearLayout
+    <Button
+        android:id="@+id/syncNowButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/saveButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/save_button"
-            style="@style/Widget.Material3.Button" />
-
-        <Button
-            android:id="@+id/syncNowButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="@string/sync_now_button"
-            style="@style/Widget.Material3.Button.OutlinedButton" />
-
-    </LinearLayout>
+        android:text="@string/sync_now_button"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
 
         </LinearLayout>
     </ScrollView>

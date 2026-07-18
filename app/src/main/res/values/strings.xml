@@ -25,7 +25,6 @@
     <string name="lan_ip_helper">Trigger only if your phone IP matches, doesn\'t require extra permissions.</string>
     <string name="server_url_label">Server URL</string>
     <string name="server_url_hint">Server URL</string>
-    <string name="save_button">Save</string>
     <string name="sync_now_button">Sync now</string>
     <string name="sync_status_scheduled">✓ Periodic sync scheduled</string>
     <string name="sync_status_not_scheduled">⚠ Periodic sync off</string>

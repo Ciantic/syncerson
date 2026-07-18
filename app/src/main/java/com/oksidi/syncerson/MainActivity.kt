@@ -19,6 +19,7 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 
@@ -69,6 +70,10 @@ class MainActivity : AppCompatActivity() {
         AppLog.init(this)
         prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
 
+        prefs.registerOnSharedPreferenceChangeListener { _, key ->
+            AppLog.append(TAG, "D", "Pref changed: $key")
+        }
+
         ssidInput = findViewById(R.id.ssidInput)
         lanIpSuffixInput = findViewById(R.id.lanIpSuffixInput)
         locationPermissionStatus = findViewById(R.id.locationPermissionStatus)
@@ -88,7 +93,6 @@ class MainActivity : AppCompatActivity() {
         periodicSyncStatusText = findViewById(R.id.periodicSyncStatus)
         val serverUrlInput = findViewById<EditText>(R.id.serverUrlInput)
         detectButton = findViewById(R.id.detectButton)
-        val saveButton = findViewById<Button>(R.id.saveButton)
         val syncNowButton = findViewById<Button>(R.id.syncNowButton)
         val copyLogButton = findViewById<TextView>(R.id.copyLogButton)
         val intervalSpinner = findViewById<MaterialAutoCompleteTextView>(R.id.intervalSpinner)
@@ -142,25 +146,30 @@ class MainActivity : AppCompatActivity() {
             toggleReceiver(ComponentName(this, PowerConnectedReceiver::class.java))
         }
 
-        saveButton.setOnClickListener {
-            val ssid = ssidInput.text.toString().trim()
-            val lanIpSuffix = lanIpSuffixInput.text.toString().trim()
-            val serverUrl = serverUrlInput.text.toString().trim()
-            val selectedText = intervalSpinner.text.toString()
-            val selectedIntervalIdx = intervalOptions.indexOf(selectedText)
-            val interval = if (selectedIntervalIdx >= 0) intervalValues[selectedIntervalIdx] else "0"
-
-            prefs.edit()
-                .putString(Constants.KEY_SSID, ssid)
-                .putString(Constants.KEY_LAN_IP_SUFFIX, lanIpSuffix)
-                .putString(Constants.KEY_SERVER_URL, serverUrl)
-                .putString(Constants.KEY_INTERVAL, interval)
-                .apply()
-
-            schedulePeriodicSync(this, interval.toLong())
-
-            AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, LAN_IP=$lanIpSuffix, URL=$serverUrl")
+        // Auto-save each text field with 300ms debounce
+        val debouncer = Debouncer(300L)
+        ssidInput.doAfterTextChanged {
+            debouncer.submit { prefs.edit().putString(Constants.KEY_SSID, it?.toString()?.trim() ?: "").apply() }
         }
+        lanIpSuffixInput.doAfterTextChanged {
+            debouncer.submit { prefs.edit().putString(Constants.KEY_LAN_IP_SUFFIX, it?.toString()?.trim() ?: "").apply() }
+        }
+        serverUrlInput.doAfterTextChanged {
+            debouncer.submit { prefs.edit().putString(Constants.KEY_SERVER_URL, it?.toString()?.trim() ?: "").apply() }
+        }
+
+        // Auto-save interval on blur or item select
+        val saveInterval = {
+            val selectedText = intervalSpinner.text.toString()
+            val idx = intervalOptions.indexOf(selectedText)
+            val interval = if (idx >= 0) intervalValues[idx] else "0"
+            prefs.edit().putString(Constants.KEY_INTERVAL, interval).apply()
+            schedulePeriodicSync(this, interval.toLong())
+        }
+        intervalSpinner.onFocusChangeListener = android.view.View.OnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) saveInterval()
+        }
+        intervalSpinner.setOnItemClickListener { _, _, _, _ -> saveInterval() }
 
         syncNowButton.setOnClickListener {
             AppLog.append(TAG, "I", "Manual sync triggered by user")
@@ -441,5 +450,16 @@ class MainActivity : AppCompatActivity() {
     private fun runNow() {
         enqueueSyncWorker(this)
         AppLog.append(TAG, "I", "One-shot sync work enqueued")
+    }
+}
+
+/** Debounces rapid calls — only the last one within [delayMs] actually runs. */
+class Debouncer(private val delayMs: Long) {
+    private val handler = Handler(Looper.getMainLooper())
+    private var runnable: Runnable? = null
+
+    fun submit(action: () -> Unit) {
+        runnable?.let { handler.removeCallbacks(it) }
+        runnable = Runnable { action() }.also { handler.postDelayed(it, delayMs) }
     }
 }
