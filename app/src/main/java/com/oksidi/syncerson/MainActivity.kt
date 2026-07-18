@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var prefs: SharedPreferences
     private lateinit var ssidInput: EditText
+    private lateinit var lanIpSuffixInput: EditText
     private lateinit var detectButton: Button
     private lateinit var locationPermissionStatus: TextView
     private lateinit var grantLocationPermissionButton: Button
@@ -69,6 +70,7 @@ class MainActivity : AppCompatActivity() {
         prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
 
         ssidInput = findViewById(R.id.ssidInput)
+        lanIpSuffixInput = findViewById(R.id.lanIpSuffixInput)
         locationPermissionStatus = findViewById(R.id.locationPermissionStatus)
         grantLocationPermissionButton = findViewById(R.id.grantLocationPermissionButton)
         bgLocationPermissionStatus = findViewById(R.id.bgLocationPermissionStatus)
@@ -104,6 +106,7 @@ class MainActivity : AppCompatActivity() {
 
         // Load saved values
         ssidInput.setText(prefs.getString(Constants.KEY_SSID, ""))
+        lanIpSuffixInput.setText(prefs.getString(Constants.KEY_LAN_IP_SUFFIX, ""))
         serverUrlInput.setText(
             prefs.getString(Constants.KEY_SERVER_URL, null)?.ifEmpty { null }
                 ?: "http://192.168.8.200:8080/sync"
@@ -141,6 +144,7 @@ class MainActivity : AppCompatActivity() {
 
         saveButton.setOnClickListener {
             val ssid = ssidInput.text.toString().trim()
+            val lanIpSuffix = lanIpSuffixInput.text.toString().trim()
             val serverUrl = serverUrlInput.text.toString().trim()
             val selectedText = intervalSpinner.text.toString()
             val selectedIntervalIdx = intervalOptions.indexOf(selectedText)
@@ -148,13 +152,14 @@ class MainActivity : AppCompatActivity() {
 
             prefs.edit()
                 .putString(Constants.KEY_SSID, ssid)
+                .putString(Constants.KEY_LAN_IP_SUFFIX, lanIpSuffix)
                 .putString(Constants.KEY_SERVER_URL, serverUrl)
                 .putString(Constants.KEY_INTERVAL, interval)
                 .apply()
 
             schedulePeriodicSync(this, interval.toLong())
 
-            AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, URL=$serverUrl")
+            AppLog.append(TAG, "I", "Settings saved: SSID=$ssid, LAN_IP=$lanIpSuffix, URL=$serverUrl")
         }
 
         syncNowButton.setOnClickListener {

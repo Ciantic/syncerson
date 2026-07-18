@@ -2,9 +2,6 @@ package com.oksidi.syncerson
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.wifi.WifiInfo
-import android.os.Build
 import android.provider.MediaStore
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -30,6 +27,7 @@ class SyncWorker(
             Constants.PREFS_NAME, Context.MODE_PRIVATE
         )
         val homeSsid = prefs.getString(Constants.KEY_SSID, null).orEmpty()
+        val lanIpSuffix = prefs.getString(Constants.KEY_LAN_IP_SUFFIX, null).orEmpty()
         val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null).orEmpty()
 
         if (serverUrl.isEmpty()) {
@@ -37,8 +35,8 @@ class SyncWorker(
             return@withContext Result.failure()
         }
 
-        // 1. Check if we're on home WiFi
-        if (!isConnectedToWifi(homeSsid)) {
+        // 1. Check if we're on home WiFi (SSID match OR LAN IP-suffix match)
+        if (!isConnectedToKnownNetwork(homeSsid, lanIpSuffix)) {
             AppLog.append(TAG, "I", "Not on home WiFi, skipping sync")
             return@withContext Result.failure()
         }
@@ -60,16 +58,31 @@ class SyncWorker(
         }
     }
 
-    private fun isConnectedToWifi(homeSsid: String): Boolean {
-        if (homeSsid.isEmpty()) return true
+    private fun isConnectedToKnownNetwork(homeSsid: String, lanIpSuffix: String): Boolean {
+        // No restrictions configured — allow all networks
+        if (homeSsid.isEmpty() && lanIpSuffix.isEmpty()) return true
 
-        val currentSsid = getCurrentSsid(TAG, applicationContext)
-        if (currentSsid != homeSsid) {
-            AppLog.append(TAG, "D", "SSID mismatch: current=$currentSsid, required=$homeSsid")
-            return false
+        // Check SSID match
+        if (homeSsid.isNotEmpty()) {
+            val currentSsid = getCurrentSsid(TAG, applicationContext)
+            if (currentSsid == homeSsid) {
+                AppLog.append(TAG, "D", "SSID match: $currentSsid")
+                return true
+            }
         }
 
-        return true
+        // Check LAN IP-suffix match
+        if (lanIpSuffix.isNotEmpty()) {
+            val ip = getDeviceIpAddress()
+            AppLog.append(TAG, "D", "Device IP: $ip, checking prefix: $lanIpSuffix")
+            if (ip != null && ip.startsWith(lanIpSuffix)) {
+                AppLog.append(TAG, "D", "LAN IP-suffix match: $ip starts with $lanIpSuffix")
+                return true
+            }
+        }
+
+        AppLog.append(TAG, "D", "Neither SSID nor LAN IP-suffix matched")
+        return false
     }
 
     private fun appendQueryParam(url: String, key: String, value: String): String {

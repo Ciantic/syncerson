@@ -21,7 +21,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello, Syncerson!"
+        android:text="@string/hello_title"
         android:textSize="24sp"
         android:layout_marginBottom="16dp" />
 
@@ -29,7 +29,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Location permission"
+        android:text="@string/location_permission_section"
         android:textStyle="bold"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
@@ -53,7 +53,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Grant location"
+            android:text="@string/grant_location_button"
             android:visibility="gone"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
@@ -63,7 +63,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Background location permission"
+        android:text="@string/bg_location_permission_section"
         android:textStyle="bold"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
@@ -87,7 +87,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Grant background location"
+            android:text="@string/grant_bg_location_button"
             android:visibility="gone"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
@@ -97,7 +97,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Media access"
+        android:text="@string/media_permission_section"
         android:textStyle="bold"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
@@ -121,7 +121,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Grant"
+            android:text="@string/grant_media_button"
             android:visibility="gone"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
@@ -132,7 +132,7 @@
         android:id="@+id/permissionSettingsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Permission settings"
+        android:text="@string/permission_settings_button"
         android:layout_marginBottom="12dp"
         style="@style/Widget.Material3.Button.OutlinedButton" />
 
@@ -140,7 +140,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Auto-sync triggers"
+        android:text="@string/auto_sync_triggers_section"
         android:textStyle="bold"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
@@ -157,7 +157,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="On boot: disabled"
+            android:text="@string/boot_status_placeholder"
             android:textSize="12sp" />
 
         <Button
@@ -165,7 +165,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Enable"
+            android:text="@string/enable_button"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
@@ -182,7 +182,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="On power: disabled"
+            android:text="@string/power_status_placeholder"
             android:textSize="12sp" />
 
         <Button
@@ -190,7 +190,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Enable"
+            android:text="@string/enable_button"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
@@ -269,10 +269,44 @@
 
     </LinearLayout>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/ssid_helper"
+        android:textSize="11sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginBottom="2dp" />
+
+    <!-- LAN IP-suffix row -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/lan_ip_hint"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/lanIpSuffixInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:text="" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/lan_ip_helper"
+        android:textSize="11sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginBottom="2dp" />
+
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/server_url_hint"
+        android:layout_marginTop="20dp"
         android:layout_marginBottom="12dp">
 
         <com.google.android.material.textfield.TextInputEditText

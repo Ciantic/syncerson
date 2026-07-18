@@ -5,6 +5,7 @@ object Constants {
     const val PERIODIC_WORK_NAME = "home_wifi_sync_periodic"
     const val PREFS_NAME = "sync_prefs"
     const val KEY_SSID = "home_wifi_ssid"
+    const val KEY_LAN_IP_SUFFIX = "lan_ip_suffix"
     const val KEY_SERVER_URL = "server_url"
     const val KEY_INTERVAL = "interval_minutes"
     const val KEY_PERMISSION_REQUESTED = "perm_requested"

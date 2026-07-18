@@ -11,6 +11,8 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import java.util.concurrent.TimeUnit
 
 fun getCurrentSsid(tag: String, context: Context): String? {
@@ -37,13 +39,46 @@ fun getCurrentSsid(tag: String, context: Context): String? {
     return null
 }
 
+/**
+ * Returns the device's Wi-Fi IPv4 address as a string (e.g. "192.168.8.100"),
+ * or null if not connected to Wi-Fi.
+ */
+fun getDeviceIpAddress(): String? {
+    try {
+        // Prefer WifiManager.connectionInfo (simpler, only returns Wi-Fi IP)
+        // Iterate all interfaces as reliable fallback
+        val candidates = NetworkInterface.getNetworkInterfaces()?.toList() ?: return null
+        for (intf in candidates) {
+            if (intf.isLoopback || !intf.isUp) continue
+            for (addr in intf.inetAddresses.toList()) {
+                if (addr is Inet4Address && !addr.isLoopbackAddress) {
+                    // Prioritize wlan interfaces
+                    val name = intf.name.lowercase()
+                    if (name.startsWith("wlan")) return addr.hostAddress
+                }
+            }
+        }
+        // Fallback: return first non-loopback IPv4 from any interface
+        for (intf in candidates) {
+            if (intf.isLoopback || !intf.isUp) continue
+            for (addr in intf.inetAddresses.toList()) {
+                if (addr is Inet4Address && !addr.isLoopbackAddress) {
+                    return addr.hostAddress
+                }
+            }
+        }
+    } catch (_: Exception) { }
+    return null
+}
+
 fun enqueueSyncWorker(context: Context) {
     val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     val homeSsid = prefs.getString(Constants.KEY_SSID, null).orEmpty()
+    val lanIpSuffix = prefs.getString(Constants.KEY_LAN_IP_SUFFIX, null).orEmpty()
 
     val requestBuilder = OneTimeWorkRequestBuilder<SyncWorker>()
 
-    if (homeSsid.isNotEmpty()) {
+    if (homeSsid.isNotEmpty() || lanIpSuffix.isNotEmpty()) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.UNMETERED)
             .build()
