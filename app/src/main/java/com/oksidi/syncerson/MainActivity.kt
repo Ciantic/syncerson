@@ -358,17 +358,17 @@ class MainActivity : AppCompatActivity() {
 
         // Location permission row
         if (fgGranted) {
-            locationPermissionStatus.text = "✓ Granted"
+            locationPermissionStatus.text = getString(R.string.perm_location_granted)
             locationPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_green_dark))
-            grantLocationPermissionButton.visibility = android.view.View.GONE
+            grantLocationPermissionButton.isEnabled = false
             detectButton.isEnabled = true
             detectButton.alpha = 1.0f
         } else {
-            locationPermissionStatus.text = "✗ Not granted"
+            locationPermissionStatus.text = getString(R.string.perm_location_denied)
             locationPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            grantLocationPermissionButton.visibility = android.view.View.VISIBLE
+            grantLocationPermissionButton.isEnabled = true
             detectButton.isEnabled = false
             detectButton.alpha = 0.5f
         }
@@ -376,22 +376,22 @@ class MainActivity : AppCompatActivity() {
         // Background location permission row
         if (!fgGranted) {
             bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
-            bgLocationPermissionStatus.text = "✗ Not granted (needs location first)"
+            bgLocationPermissionStatus.text = getString(R.string.perm_bg_location_denied_no_fg)
             bgLocationPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            grantBgLocationPermissionButton.visibility = android.view.View.GONE
+            grantBgLocationPermissionButton.isEnabled = false
         } else if (bgGranted) {
             bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
-            bgLocationPermissionStatus.text = "✓ Granted"
+            bgLocationPermissionStatus.text = getString(R.string.perm_bg_location_granted)
             bgLocationPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_green_dark))
-            grantBgLocationPermissionButton.visibility = android.view.View.GONE
+            grantBgLocationPermissionButton.isEnabled = false
         } else {
             bgLocationPermissionStatus.visibility = android.view.View.VISIBLE
-            bgLocationPermissionStatus.text = "✗ Not granted (needed for background SSID)"
+            bgLocationPermissionStatus.text = getString(R.string.perm_bg_location_denied)
             bgLocationPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            grantBgLocationPermissionButton.visibility = android.view.View.VISIBLE
+            grantBgLocationPermissionButton.isEnabled = true
         }
 
         // Media permission row
@@ -401,21 +401,21 @@ class MainActivity : AppCompatActivity() {
         if (mediaGranted) {
             val count = getMediaCount()
             if (count < 0) {
-                mediaPermissionStatus.text = "⚠ Limited access"
+                mediaPermissionStatus.text = getString(R.string.perm_media_limited)
                 mediaPermissionStatus.setTextColor(
                     ContextCompat.getColor(this, android.R.color.holo_orange_dark))
-                grantMediaPermissionButton.visibility = android.view.View.VISIBLE
+                grantMediaPermissionButton.isEnabled = true
             } else {
-                mediaPermissionStatus.text = "✓ Granted ($count photos)"
+                mediaPermissionStatus.text = getString(R.string.perm_media_granted, count)
                 mediaPermissionStatus.setTextColor(
                     ContextCompat.getColor(this, android.R.color.holo_green_dark))
-                grantMediaPermissionButton.visibility = android.view.View.GONE
+                grantMediaPermissionButton.isEnabled = false
             }
         } else {
-            mediaPermissionStatus.text = "✗ Not granted"
+            mediaPermissionStatus.text = getString(R.string.perm_media_denied)
             mediaPermissionStatus.setTextColor(
                 ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            grantMediaPermissionButton.visibility = android.view.View.VISIBLE
+            grantMediaPermissionButton.isEnabled = true
         }
     }
 
@@ -456,12 +456,12 @@ class MainActivity : AppCompatActivity() {
         updateReceiverToggle(
             ComponentName(this, BootReceiver::class.java),
             bootReceiverStatus, toggleBootReceiverButton,
-            "On boot"
+            getString(R.string.receiver_label_boot)
         )
         updateReceiverToggle(
             ComponentName(this, PowerConnectedReceiver::class.java),
             powerReceiverStatus, togglePowerReceiverButton,
-            "On power"
+            getString(R.string.receiver_label_power)
         )
     }
 
@@ -473,14 +473,18 @@ class MainActivity : AppCompatActivity() {
         val currentState = packageManager.getComponentEnabledSetting(component)
         val enabled = currentState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
 
-        statusText.text = "$label: ${if (enabled) "enabled ✓" else "disabled ✗"}"
+        statusText.text = getString(
+            R.string.receiver_status_format,
+            label,
+            getString(if (enabled) R.string.receiver_enabled else R.string.receiver_disabled)
+        )
         statusText.setTextColor(
             ContextCompat.getColor(this,
                 if (enabled) android.R.color.holo_green_dark
                 else android.R.color.holo_red_dark
             )
         )
-        button.text = if (enabled) "Disable" else "Enable"
+        button.text = getString(if (enabled) R.string.button_disable else R.string.button_enable)
     }
 
     /** Returns photo count, or -1 if access is limited (Android 14+). */

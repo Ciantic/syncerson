@@ -1,10 +1,11 @@
 <resources>
     <string name="app_name">Syncerson</string>
     <string name="hello_title">Hello, Syncerson!</string>
+    <string name="permissions_title">Permissions</string>
     <string name="location_permission_section">Location permission</string>
-    <string name="grant_location_button">Grant location</string>
+    <string name="grant_location_button">Grant</string>
     <string name="bg_location_permission_section">Background location permission</string>
-    <string name="grant_bg_location_button">Grant background location</string>
+    <string name="grant_bg_location_button">Grant</string>
     <string name="media_permission_section">Media access</string>
     <string name="grant_media_button">Grant</string>
     <string name="permission_settings_button">Permission settings</string>
@@ -56,4 +57,20 @@
     <string name="permission_granted">✓ Location permission granted</string>
     <string name="permission_needed">⚠ Sync will not work without \'Location permission\' — it\'s needed to read the WiFi name.</string>
     <string name="permission_permanently_denied">⚠ Permission was permanently denied. Open app settings to grant it.</string>
+    <string name="perm_status_checking">Checking…</string>
+    <string name="perm_location_granted">✓ Has location permission</string>
+    <string name="perm_location_denied">✗ No location permission</string>
+    <string name="perm_bg_location_denied_no_fg">✗ No background permission (needs location first)</string>
+    <string name="perm_bg_location_granted">✓ Has background location permission</string>
+    <string name="perm_bg_location_denied">✗ No background permission (needed for SSID)</string>
+    <string name="perm_media_limited">⚠ Limited media access</string>
+    <string name="perm_media_granted">✓ Has media access (%d photos)</string>
+    <string name="perm_media_denied">✗ No media access</string>
+    <string name="receiver_label_boot">On boot</string>
+    <string name="receiver_label_power">On power</string>
+    <string name="receiver_status_format">%1$s: %2$s</string>
+    <string name="receiver_enabled">enabled ✓</string>
+    <string name="receiver_disabled">disabled ✗</string>
+    <string name="button_enable">Enable</string>
+    <string name="button_disable">Disable</string>
 </resources>

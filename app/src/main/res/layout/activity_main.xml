@@ -43,14 +43,14 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-    <!-- Location permission row -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/location_permission_section"
+        android:text="@string/permissions_title"
         android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:layout_marginBottom="4dp" />
+        android:layout_marginBottom="8dp" />
 
+    <!-- Location permission row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -63,6 +63,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:text="@string/perm_status_checking"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <Button
@@ -71,7 +72,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="@string/grant_location_button"
-            android:visibility="gone"
+            android:enabled="false"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
@@ -83,13 +84,6 @@
         android:layout_marginBottom="8dp" />
 
     <!-- Background location permission row -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/bg_location_permission_section"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:layout_marginBottom="4dp" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -102,6 +96,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:text="@string/perm_status_checking"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <Button
@@ -110,7 +105,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="@string/grant_bg_location_button"
-            android:visibility="gone"
+            android:enabled="false"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
@@ -122,13 +117,6 @@
         android:layout_marginBottom="8dp" />
 
     <!-- Media permission row -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/media_permission_section"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:layout_marginBottom="4dp" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -141,6 +129,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:text="@string/perm_status_checking"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <Button
@@ -149,10 +138,16 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="@string/grant_media_button"
-            android:visibility="gone"
+            android:enabled="false"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorOutlineVariant"
+        android:layout_marginBottom="12dp" />
 
     <!-- Permission settings button -->
     <Button
