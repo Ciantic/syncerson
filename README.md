@@ -2,6 +2,27 @@
 
 It syncs your photos? I don't know, it really doesn't sync anything as of yet.
 
+Goal of this project is not to use any foreground service, only WorkManager and triggers. They don't require user to run the app in background as service to do the sync.
+
+Project is already useful for someone *building their own sync*. This implements UI and WorkManager that is required for *all* sync apps. 
+
+Restrictions user can choose from:
+
+- Sync only when connected to WiFi (no location permission required)
+- Sync only when connected to a specific WiFi SSID (requires location permission)
+- Sync only when connected to a WiFi with a specific LAN IP prefix (no location permission required)
+- Sync without any restrictions
+
+WorkManager triggers user can toggle from UI:
+
+- Boot
+- Power connected
+- Periodic with
+
+UI has log view to debug issues, not all Android phones trigger WorkManager events the same way, so this is useful to see if the sync is actually triggered.
+
+Project just doesn't have any sync logic yet, if one wanted to implement their own sync, it would be enough to edit SyncWorker.kt.
+
 ## Notes
 
 ### NEARBY_WIFI_DEVICES permission (tried, not sufficient)
@@ -14,21 +35,3 @@ the SSID is covered by `NEARBY_WIFI_DEVICES`:
 
 - `ConnectivityManager.getNetworkCapabilities().transportInfo` (Android 13+) — not listed
 - `WifiManager.connectionInfo.ssid` (deprecated) — not listed
-
-## Sync triggers
-
-The app has no foreground service. Sync is triggered by enqueuing one-shot work into
-WorkManager. When a home SSID is configured, an `UNMETERED` (WiFi) constraint is applied.
-WorkManager holds the work until WiFi is available, then runs it within seconds — effectively
-a "sync when I get home" trigger.
-
-| Trigger | Constraint | Behavior |
-|---|---|---|
-| Boot (`BootReceiver`) | UNMETERED (if SSID set) | Enqueues on boot, runs when WiFi available |
-| Power connected (`PowerConnectedReceiver`) | UNMETERED (if SSID set) | Enqueues on plug-in, runs when WiFi available |
-| Periodic timer (`PeriodicWorker`) | None | Fires every N minutes, re-enqueues the one-shot pipeline |
-| "Sync now" button | UNMETERED (if SSID set) | Same as above, user-initiated |
-
-The periodic worker has no constraints so it can re-prime the pipeline from anywhere.
-The one-shot carries the UNMETERED constraint, so when you walk in the door and your phone
-joins home WiFi, the waiting one-shot fires within seconds.
