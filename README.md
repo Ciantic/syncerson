@@ -23,7 +23,7 @@ UI has log view to debug issues, not all Android phones trigger WorkManager even
 
 Project just doesn't have any sync logic yet, if one wanted to implement their own sync, it would be enough to edit SyncWorker.kt.
 
-<img src="./screenshot.jpg" width="300" />
+<img src="./screenshot.webp" width="300" />
 
 
 
