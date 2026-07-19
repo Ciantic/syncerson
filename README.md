@@ -17,7 +17,7 @@ WorkManager triggers user can toggle from UI:
 
 - Boot
 - Power connected
-- Periodic with
+- Periodic (15min, 30min etc)
 
 UI has log view to debug issues, not all Android phones trigger WorkManager events the same way, so this is useful to see if the sync is actually triggered.
 
