@@ -319,9 +319,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        logOutput.text = AppLog.getText()
-        logScrollView.post { logScrollView.fullScroll(android.view.View.FOCUS_DOWN) }
-        refreshHandler.postDelayed(refreshUiRunnable, 1000)
+        refreshHandler.removeCallbacks(refreshUiRunnable)
+        refreshUiRunnable.run()
     }
 
     override fun onPause() {
